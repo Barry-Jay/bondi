@@ -1,0 +1,159 @@
+#! /usr/local/bin/perl -w
+use strict;
+
+{
+    my $dir = $0;
+    $dir =~ s!/[^/]+$!! or $dir = '.';
+    chdir $dir
+      or die "$dir: $! (how strange!)\n";
+}
+
+#### Usage and error messages ####
+
+sub usage {
+    my @targets = grep { -d && !/^default$/ } glob('*');
+    my %options = ();
+    foreach (glob '*-*.*') {
+        /^([0-9A-Z_a-z]+)-([0-9A-Z_a-z]+)\.[.0-9A-Z_a-z]+$/ or next;
+        $options{$1} ||= [];
+        push @{$options{$1}}, $2 unless grep {$_ eq $2} @{$options{$1}};
+    }
+    local $; = " ";
+    print <<EOF;
+Usage: $0 TARGET OPTION=VALUE [...]
+       $0 TARGET -
+Possible TARGETs: @targets
+Possible OPTION VALUEs:
+EOF
+    foreach (keys %options) {
+        local @_ = @{$options{$_}};
+        print "  $_: @_\n";
+    }
+    print <<EOF;
+
+Information on deciding the proper configuration can be found in
+Notes/config.txt.
+The form `$0 TARGET -' chooses the ``bare'' setting for every option. This
+configuration should always work but deprives you of some interface goodies.
+EOF
+    exit 0;
+}
+
+sub usage_error {
+    print STDERR "Aborting. try `$0 --help' for more information.\n";
+    exit 2;
+}
+
+if (!@ARGV || grep {/^--help$/} @ARGV) { usage; exit 0; }
+
+$ARGV[0] =~ s!/+$!!;
+if (! -d $ARGV[0] || $ARGV[0] eq 'default') {
+    print STDERR "$ARGV[0] is not a valid target\n";
+    usage_error;
+}
+
+
+#### Read default and cached settings ####
+
+my $target = shift @ARGV;
+my %options = ();
+
+sub read_defaults {
+    my ($origin, $file) = @_;
+    local $_;
+    local *CACHE;
+    open CACHE, "< $file" or die "$file: $!";
+    while (<CACHE>) {
+        chomp;
+        next unless s/^([0-9A-Z_a-z]+)\s*=\s*//;
+        $options{$1} = [$origin, $_];
+    }
+    close CACHE;
+}
+
+if (-r "default/$target") {
+    read_defaults 'default', "default/$target"
+}
+if (-r "$target/cache") {
+    read_defaults 'cached', "$target/cache"
+}
+
+
+#### Read explicit settings ####
+
+if (@ARGV == 1 && $ARGV[0] eq '-') {
+    foreach (glob '*-bare.*') {
+        /^([0-9A-Z_a-z]+)-bare\.[.0-9A-Z_a-z]+$/ || next;
+        $options{$1} = ['explicit', 'bare'];
+    }
+} else {
+    foreach (@ARGV) {
+        if (!s/^([0-9A-Z_a-z]+)\s*=\s*//) {
+            print STDERR "Bad setting: $_\n";
+            usage_error;
+        }
+        $options{$1} = ['explicit', $_];
+    }
+}
+
+#foreach (keys %options) {
+#    my ($origin, $value) = @{$options{$_}};
+#    print "$_ = $value ($origin)\n";
+#}
+
+
+#### Write settings to cache ####
+
+{
+    local *CACHE;
+    if (open CACHE, "> $target/cache") {
+        foreach (keys %options) {
+            my ($origin, $value) = @{$options{$_}};
+            print CACHE "$_ = $value\n";
+        }
+        close CACHE;
+    } else {
+        print STDERR "Warning: not writing to the cache file\n";
+        print STDERR "          $target/cache: $!\n";
+    }
+}
+
+
+#### Build configuration files ####
+
+sub build_file {
+    my ($type) = @_;
+    local $_;
+    my $out = "$target/config.$type";
+    my $old = "$target/old.$type";
+    if (-f $old) { unlink $old }
+    rename $out, $old;
+    local *IN; local *OUT;
+    if (!open OUT, "> $out") {
+        print STDERR "I can't write to $out, this might result in a malfunctioning configuration.";
+        return 0;
+    }
+    foreach (keys %options) {
+        my $in  = "$_-${$options{$_}}[1].$type";
+        if (-r $in) {
+            if (!open IN, "< $in") { next }
+            if ($type eq 'make') {
+                while (<IN>) {
+                    print OUT if (!/\$\#\[[0-9A-Z_a-z]+\]/ ||
+                                  s/\$\#\[$target\]//);
+                }
+            } else {
+                while (<IN>) { print OUT }
+            }
+            close IN;
+        }
+    }
+    close OUT;
+    return 1;
+}
+
+my $ok = 1;
+$ok &&= build_file('ml');
+$ok &&= build_file('make');
+
+exit !$ok;

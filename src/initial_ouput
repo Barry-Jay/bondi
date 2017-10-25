@@ -1,0 +1,71 @@
+Loading startup files ...
+(* Begin sourcing "./standard_prelude.bon"... *)
+toString: a -> Bool -> String
+print: a -> Unit
+Pair: a -> b -> a * b
+toString: c * d -> Bool -> String
+Evr: a -> Konstant a b
+Ths: a -> Identity a
+ParamPair: a b -> c b -> ParamProduct a c b
+Ok: a b -> Okay a b
+Nest: a (b c) -> Nested a b c
+Tag: (a -> b) -> a c -> Represent a b c
+deconstruct: a b -> all c.(Represent c a b -> d) -> d
+reconstruct: Represent a b c -> b c
+map: (a -> b) -> c a -> c b
+Nil: List a
+Cons: a -> List a -> List a
+toString: List b -> Bool -> String
+toString: List c -> Bool -> String
+Vec: array a -> Vector a
+toString: Vector b -> Bool -> String
+entryv: Vector a -> Int -> ref a
+arr: Vector Int
+arr = [..]
+it: Int
+it = 3
+it: Unit
+it: Int
+it = 5
+foldleft: (a -> b -> a) -> a -> c b -> a
+foldright: (a -> b -> b) -> c a -> b -> b
+zipwith: (a * b -> c) -> d a * e b -> d c
+plus: a * b -> a
++: a -> a -> a
+shortplus: a * b -> a
+minus: a * b -> a
+-: a -> a -> a
+times: a * b -> a
+*: a -> a -> a
+divide: a * b -> a
+/: a -> a -> a
+negate: a -> a
+^: String -> String -> String
+&&: Bool -> Bool -> Bool
+not: Bool -> Bool
+||: Bool -> Bool -> Bool
+equal: a * b -> Bool
+==: a -> a -> Bool
+!=: a -> a -> Bool
+lessthan: a * b -> Bool
+<: a -> a -> Bool
+lessthanorequal: a * b -> Bool
+<=: a -> a -> Bool
+greaterthan: a * b -> Bool
+>: a -> a -> Bool
+greaterthanorequal: a * b -> Bool
+>=: a -> a -> Bool
+apply2all: all a.(a -> a) -> b -> b
+append: List a -> List a -> List a
+select: all a.(a -> List b) -> c -> List b
+iter: all a.(a -> Unit) -> b -> Unit
+forall: Int -> Int -> (Int -> a) -> Unit
+(* Finished sourcing "./standard_prelude.bon" *)
+
+
+Welcome to bondi version 1.7
+(C) Copyright 2005,2007 Barry Jay
+No warranty expressed or implied
+See README for details
+type `%quit;;' to exit
+~~

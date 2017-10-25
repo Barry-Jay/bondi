@@ -1,0 +1,264 @@
+(* Begin sourcing "./prelude/standard_prelude.bon"... *)
+(* Begin sourcing "./prelude/printing.bon"... *)
+^: String -> String -> String
+toString: a -> String
+print: a -> Unit
+println: a -> Unit
+(* Finished sourcing "./prelude/printing.bon" *)
+(* Begin sourcing "./prelude/imperatives_core.bon"... *)
+forall: Int -> Int -> (Int -> a) -> Unit
+iter: (all a.a -> Unit) -> b -> Unit
+clone: a -> a
+(* Finished sourcing "./prelude/imperatives_core.bon" *)
+(* Begin sourcing "./prelude/structure_poly.bon"... *)
+Pair: a -> b -> a * b
+fromTuple: a -> String
+it: Unit
+fst: a * b -> a
+snd: a * b -> b
+Inl: a -> a + b
+Inr: b -> a + b
+Evr: a -> Konstant a b
+Ths: a -> Identity a
+ParamPair: a b -> c b -> ParamProduct a c b
+Ok: a b -> Okay a b
+Nest: a (b c) -> Nested a b c
+Tag: (a -> b) -> a c -> Represent a b c
+deconstruct: a b -> (all c.Represent c a b -> d) -> d
+reconstruct: Represent a b c -> b c
+map: (a -> b) -> c a -> c b
+Nil: List a
+Cons: a -> List a -> List a
+toString: b -> String
+toString: c -> String
+Some: a -> Maybe a
+None: Maybe a
+foldleft: (a -> b -> a) -> a -> c b -> a
+foldright: (a -> b -> b) -> c a -> b -> b
+zipwith: (a * b -> c) -> d a * e b -> d c
+(* Finished sourcing "./prelude/structure_poly.bon" *)
+(* Begin sourcing "./prelude/datum2generic.bon"... *)
+&&: Bool -> Bool -> Bool
+not: Bool -> Bool
+||: Bool -> Bool -> Bool
+equal: a * b -> Bool
+==: a -> a -> Bool
+!=: a -> a -> Bool
+plus: a * b -> a
++: a -> a -> a
+shortplus: a * b -> a
+minus: a * b -> a
+-: a -> a -> a
+times: a * b -> a
+*: a -> a -> a
+divide: a * b -> a
+/: a -> a -> a
+negate: a -> a
+lessthan: a * b -> Bool
+<: a -> a -> Bool
+lessthanorequal: a * b -> Bool
+<=: a -> a -> Bool
+greaterthan: a * b -> Bool
+>: a -> a -> Bool
+greaterthanorequal: a * b -> Bool
+>=: a -> a -> Bool
+(* Finished sourcing "./prelude/datum2generic.bon" *)
+(* Begin sourcing "./prelude/dynamic2static.bon"... *)
+dynamic_case_for_internal_use_only = ...
+(* Finished sourcing "./prelude/dynamic2static.bon" *)
+(* Begin sourcing "./prelude/queries.bon"... *)
+apply2all: (all a.a -> a) -> b -> b
+append: List a -> List a -> List a
+some_append: Maybe a -> List a -> List a
+select: (all a.a -> Maybe b) -> c -> List b
+is: lin a -> b -> Maybe a
+(* Finished sourcing "./prelude/queries.bon" *)
+(* Finished sourcing "./prelude/standard_prelude.bon" *)
+(* Begin sourcing "./basic_tests.bon"... *)
+it: Int
+it = 3
+it: Float
+it = 3.3
+it: Char
+it = 'a'
+it: String
+it = "a"
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Int
+it = _Int
+it: Float
+it = _Float
+it: Char
+it = _Char
+it: String
+it = _String
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Float
+it = 1.0471975512
+it: Float
+it = 0.523598775598
+it: Int
+it = 3
+it: Float
+it = 7.7
+it: Float
+it = -1.1
+it: Float
+it = 14.52
+it: Float
+it = 0.75
+it: Float
+it = 0.643501108793
+it: Float
+it = 1.1
+it: Float
+it = 4.
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Unit
+abcit: String
+it = "abcdef"
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Unit
+it: Unit
+type Comm = Unit
+skip: Unit
+it: a -> b -> a * b
+it: a -> Int * a
+it: Int * Int
+it = (3,4)
+f: Int -> Int
+it: Bool
+it = True
+id: a -> a
+it: Bool
+it = True
+polyid: a -> a
+it: a -> a
+it: Bool
+it = True
+it: Int * Float
+it = (3,3.3)
+pm: Int -> Int
+it: Bool
+it = True
+it: Bool
+it = True
+pm1: a -> a
+pairm: Bool
+pairm = True
+not: Bool -> Bool
+&&: Bool -> Bool -> Bool
+||: Bool -> Bool -> Bool
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+isAtom: a -> Bool
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: a -> a
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: a -> a
+it: Bool
+it = True
+f: a -> a
+it: Bool
+it = True
+g: a -> a
+it: Bool
+it = True
+it: Bool
+it = True
+h: a -> a
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+factorial: Int -> Int
+factorial: Int -> Int
+it: Bool
+it = True
+pm: a -> a
+pm2: a -> a
+it: Int -> Int
+pm3: Int -> Int
+append: List a -> List a -> List a
+flatten: List (List a) -> List a
+it: List a -> List b
+plus: a * b -> a
++: a -> a -> a
+equal: a * b -> Bool
+==: a -> a -> Bool
+!=: a -> a -> Bool
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+it: Bool
+it = True
+Inl: a -> a + b
+Inr: b -> a + b
+it: Bool
+it = True
+(* Finished sourcing "./basic_tests.bon" *)

@@ -1,0 +1,118 @@
+(*
+%open "declaration_tests.bon";;
+*)
+
+
+
+(* testing of term indexing *) 
+
+let x = 3;;
+let f y = x;;
+let x = 5;;
+f 7 eqcons 3;;
+
+datatype One = Leaf ;;
+let g y = Leaf;;
+datatype One = Leaf ;;
+not (equal(g 4, Leaf));;
+
+
+(* testing of type indexing 
+
+g 4 == Leaf;;
+
+let (h: One -> Bool) = fun x -> True  in h (g 4);;
+
+datatype Unit = Fool;;
+
+*)
+ datatype Coproduct a b = Inl of a | Inr of b ;;
+
+(* need type info 
+
+let case_analysis f g = 
+| Inl x -> f x
+| Inr y -> g y 
+;;
+
+*) 
+
+(*** pre-installed type and term constants  *)
+
+(* some errors 
+
+type Unit = Int;;
+datatype Unit = Atom;;
+datatype Atom = False;;
+
+
+*)
+
+
+(*** class indexing *) 
+
+
+
+
+class Name { 
+name : String;
+get_name = { | () -> !this.name }
+set_name = { fun n -> this.name = n }
+with toString += | (x:Name) ->  x.get_name()
+}
+
+
+let z = new Name;;
+
+let g y = new Name;;
+
+(* a type error 
+
+z == g 4;;
+
+class Unit { 
+name : String;
+get_name = { | () -> !this.name }
+set_name = { fun n -> this.name = n }
+}
+
+class Int { 
+name : String;
+get_name = { | () -> !this.name }
+set_name = { fun n -> this.name = n }
+}
+
+
+*)
+
+
+
+let (case_analysis: (a -> c) -> (b -> c) -> Coproduct a b -> c) f g = 
+| Inl x -> f x
+| Inr y -> g y 
+;;
+
+Inl eqcons Inl;;
+Inr eqcons Inr;;
+
+3 eqcons 3;;
+not (3 eqcons 4);;
+
+
+datatype One = Leaf ;;
+let t1 = Leaf ;;
+datatype One = Leaf ;;
+let t2 = Leaf;;
+not (equal(t1,t2));;
+
+(*
+t1 == t2;; yields a type error 
+*) 
+
+
+datatype Poly = Poly of (all a. (a -> Int)) ;;
+
+| Poly x -> x;;
+
+| Poly x -> Poly x;;
+

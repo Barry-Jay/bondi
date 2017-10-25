@@ -1,0 +1,208 @@
+(*
+%open "containers.bon";;
+*)
+class Container<a> {
+dummy : a;
+next = {|() -> (None: Maybe a) }
+}
+
+let rec fetch = | (x:Container<a>) -> | (n:Int) -> 
+  let res = x.next() in 
+  if n <= 0 
+  then res
+  else fetch x (n-1)
+;;
+
+let rec fetch_to_nth = | (x:Container<a>) -> | (n:Int) -> 
+  let res = x.next() in 
+  if n <= 1 
+  then [res]
+  else append [res] (fetch_to_nth x (n-1))
+;;
+
+class ContainerList<a> extends Container {
+data : List a;
+next = { |() -> 
+	let (aux: List a ->Maybe a) = 
+	  | Cons x xs -> this.data = xs; Some x
+	  | _ -> None 
+	in aux !this.data
+}
+}
+
+let ext (make_list : List a -> ContainerList <a>) xs = 
+let cl = new ContainerList<a> in 
+cl.data = xs;
+cl;;
+
+class Stream<a> extends Container {
+data : Int -> Maybe a;
+seed : Int ;
+get_data = {|()-> !this.data}
+get_seed = {|() -> !this.seed}
+incr_seed = {|() -> this.seed = !this.seed + 1}
+next = {|() -> 
+  let res = this.get_data() (this.get_seed()) in 
+  this.incr_seed(); 
+  res }
+}
+
+
+class Queue<a> {
+data : List a;
+get_data = {|() -> !this.data }
+set_data = {fun x -> this.data = x}
+push = { fun x -> match (this.get_data()) with
+		  | Nil -> this.set_data [x]
+		  | _ -> this.set_data (Cons x (!this.data))
+}
+pop = { | () ->
+	    let (tail : List a -> List a) =
+	      | Cons h t -> t
+	      | z -> z
+	    in
+	    this.data = tail !this.data
+}
+top = { | () ->
+	    let (head : List a -> Maybe a) =
+	      | Cons h t -> Some h
+	      | _ -> None
+	    in
+	    head !this.data
+}
+}
+
+let q = new Queue<Int>;;
+q.push 3;;
+q.top();;
+q.pop();;
+q.top();;
+
+
+let (merge: Stream<b> -> Stream<b> -> Stream<b>) xs ys =
+let empty_xs = Ref False in
+let empty_ys = Ref False in
+let resp = new Stream<b> in
+let (next: Int -> Maybe b) n=
+  if (n/2 * 2 == n && (not !empty_xs)) then
+    match xs.next() with
+     | Some x -> Some x
+     | None -> empty_xs = True ;
+	       match ys.next() with
+	       | Some y -> Some y
+	       | None -> None
+    else
+    if (not !empty_ys) then
+      match ys.next() with
+      | Some y -> Some y
+      | None -> empty_ys = True;
+		match xs.next() with
+		| Some x -> Some x
+		| None -> None
+    else
+    None
+in
+   resp.data = next;
+   resp.seed = 0;
+   resp
+;;
+
+    
+
+
+let rec (co_select: (all a.a -> List b) -> c -> Stream<b>) f =
+| (xs:Container<a>) ->
+    let empty = Ref False in
+    let res = new Stream<b> in
+    let q = new Queue<b> in
+    let rec (aux: Int -> Maybe b) n =
+	let next =
+	|() ->
+	    match (xs.next()) with
+		  | Some z -> 
+			    match (f z) with
+			     begin
+			     |Cons y ys-> q.push y
+			     |Nil -> ()
+			     end
+		  | None -> empty = True
+	in 
+	if (n <= 0) then
+	  next();
+	  match (q.top()) with
+	    |None-> if !empty then None else aux (n-1)
+	    |Some x -> q.pop();Some x
+	else 
+	  aux (n-1)    
+    in
+    res.data=aux;res.seed=0;res
+| z y -> merge (co_select f (make_list (f (z y))))
+        (merge (co_select f z) (co_select f y))
+| w ->    let resp1 = new Stream<b> in
+          let q1 = new Queue<b> in
+          let next1 =               
+	    | () -> match (f w) with
+		     | Cons x xs -> q1.push x
+		     | Nil -> ()
+          in
+	  next1();
+	  let rec (aux1: Int -> Maybe b) n =
+	    if (n <= 0) then
+	      let value = q1.top()
+	      in
+	      q1.pop();value
+	else 
+	  aux1 (n-1)
+       in 
+     resp1.data = aux1;resp1.seed=0;resp1   
+;;
+
+let (anyIsEven: a -> List Int) = 
+| (x:Int) -> if x/2 * 2 == x then [x] else []
+| _ -> [];;
+
+
+let test =(co_select anyIsEven 2);; 
+fetch test 0;;
+
+
+let make_ints = |() -> 
+let ints = new Stream<Int> in 
+let aux = fun (n:Int) ->Some n in 
+ints.data = aux;
+ints.seed = 0 ;
+ints;;
+
+
+let odd = co_select anyIsEven (make_list [1,3,5]);;
+fetch odd 0;;
+
+let even = co_select anyIsEven (make_list [2,4,6]);;
+fetch even 0;;
+fetch even 0;;
+fetch even 0;;
+fetch even 0;;
+
+let even = co_select anyIsEven (make_list [1,2,3,4,5,6]);;
+fetch even 0;;
+fetch even 0;;
+fetch even 0;;
+fetch even 0;;
+
+let ints = make_ints();;
+
+let even_stream = co_select anyIsEven ints;;
+fetch even_stream 0;;
+fetch even_stream 0;;
+fetch even_stream 0;;
+fetch even_stream 0;;
+
+let nlist = co_select anyIsEven [1,2,3,4,5,6,7,8,9,10];;
+
+fetch nlist 0;;
+fetch nlist 0;;
+fetch nlist 0;;
+fetch nlist 0;;
+fetch nlist 0;;
+
+

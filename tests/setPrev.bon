@@ -1,0 +1,84 @@
+
+
+
+class Node <a>   {
+value : a ;
+next : Node <a>;
+getValue  = { |() -> !this.value }
+setValue = { fun v -> this.value = v }
+getNext = { |() -> !this.next }
+setNext = { fun (n: Node <a>) -> this.next = n }
+insert = { fun (n: Node<a>) -> n.setNext (this.getNext()); this.setNext n }
+with 
+toString += | (x: Node<a>) ->
+ let rec (aux: c -> String) = 
+ | Node _ (v,Ref (Exception _)) -> toString !v  
+ | Node _ (v,n) -> (toString !v) ^ "," ^ (aux !n) 
+ | _ -> ""
+ in 
+ "[" ^ (aux x) ^"]" 
+}
+
+let x = new Node <List a>;;
+x.setValue([3]);;
+x;;
+
+
+let x0 = new Node <Int>  ;;
+let x1 = new Node<Int>  ;;
+let x2 = new Node<Int>  ;;
+x0.setValue 0;
+x1.setValue 1;
+x2.setValue 2;
+x0.setNext x2;
+x0;;
+x0.insert x1;
+x0;;
+let r4 = new Node <Float>;; 
+r4.setValue 4.4;
+r4;;
+
+
+let anyNode = 
+| (x:Node) -> print (x.getValue())
+| _ -> ()
+;;
+
+iter anyNode x0;;
+iter anyNode r4;;
+
+
+class DNode <a> extends Node {
+previous : ref (DNode <a>); 
+getPrev = { |()-> ! !this.previous }
+setPrev  = { fun (p: DNode <a>) -> this.previous = Ref p }
+setNext = { 
+let (aux: Node<a> -> Unit) = 
+ | (n:DNode) ->
+                super.setNext n;
+		n.setPrev this
+ | n -> super.setNext n
+ in fun (x: Node<a>) -> aux x
+}        
+}
+
+(* the problem above is that the type variable 'a' in aux is
+independent of that of the class, and is fixed before typing n.setPrev
+this. One solution is to make the scope of 'a' be the whole class declaration. 
+Another, is to allow some instantiation of type variables when typing the body, as was my original plan. 
+
+*) 
+
+let d0 = new DNode<Int>   ;;
+let d1 = new DNode<Int>  ;;
+let d2 = new DNode<Int>  ;;
+d0.setValue 0;;
+d1.setValue 1;;
+d2.setValue 2;;
+d0.setNext d2;
+d0;;
+d2.getPrev();;
+d0.insert d1;
+d2.getPrev();;
+d1.getPrev();;
+

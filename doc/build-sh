@@ -1,0 +1,4 @@
+#!/bin/bash
+
+rm structure.pdf
+pdflatex lang-spec.tex

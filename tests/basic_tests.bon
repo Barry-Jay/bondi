@@ -1,0 +1,275 @@
+(*** basic tests *) 
+(* 
+%open "../tests/basic_tests.bon";; 
+*) 
+
+(* datum values *) 
+
+3;;
+3.3;;
+'a';;
+"a";;
+
+negateint 3 eqcons (-3);;
+int2float 3 eqcons 3.0;;
+
+3 plusint 4 eqcons 7;;
+3 timesint 4 eqcons 12;;
+5 minusint 3 eqcons 2;;
+9 divideint 4 eqcons 2;;
+7 modint 4 eqcons 3;;
+
+(* wildcards *) 
+
+_Int;;
+_Float;;
+_Char;;
+_String;;
+
+
+
+True;;
+(| True -> False | _ -> True) False;;
+
+
+3 lessthanint 4 ;;
+3 lessthanorequalint 4;;
+4 greaterthanint 3;;
+4 greaterthanorequalint 3;;
+
+negatefloat 3.3 eqcons (-3.3);;
+acos 0.5;;
+asin 0.5;;
+(* ... *) 
+truncate 3.3;;
+
+3.3 plusfloat 4.4;;
+3.3 minusfloat 4.4;;
+3.3 timesfloat 4.4;;
+3.3 dividefloat 4.4;;
+3.3 atan2 4.4;;
+4.4 fmod 3.3;;
+2.0 pow 2.0;;
+3.3 lessthanfloat 4.4;;
+3.3 lessthanorequalfloat 4.4;;
+(* ... *) 
+
+'a' lessthanchar 'b';;
+printstring "abc";;
+"abc" concat "def";; 
+
+(* built-in constructors *) 
+Tag eqcons Tag;;
+Exception eqcons Exception;;
+
+
+(*** other operators *) 
+
+prim2string Tag eqcons "Tag";;
+prim2string Exception eqcons "Exception";;
+
+
+
+(*** data structures *) 
+
+
+
+Un;;
+();;
+
+type Comm = Unit;;
+let skip = Un;;
+
+
+(*
+datatype Binprod x y  = Pair of x and y;;
+*)
+
+Pair;;
+Pair 3;;
+Pair 3 4;;
+
+(*** abstractions *) 
+
+let f x = x plusint x;;
+f 2 eqcons 4;;
+
+let id x = x;;
+id 3 eqcons 3;;
+
+let (polyid: a -> a) = | x -> x ;;
+
+polyid polyid;;
+polyid polyid 3 eqcons 3;;
+(polyid 3,polyid 3.3);;
+
+
+(*** pattern-matching *) 
+
+let pm = | 0 -> 3;;
+pm 0 eqcons 3;;
+
+%show nomatch;;
+
+pm 5 == Exception "nomatch";;
+
+
+%hide nomatch;;
+
+let (pm1 : a -> a) =  | 0 -> 3;;
+
+let pairm = (| Pair x y -> x) (Pair 3 4) eqcons 3;;
+
+
+
+let not x = if x then False else True;;
+let (&&) x y = if x then y else False;;
+let (||) x y = if x then True else y;;
+
+
+not True eqcons False;;
+True && False eqcons False;;
+True || False;;
+
+(if True then 3 else 4) eqcons 3;;
+(if False then 3 else 4) eqcons 4;;
+
+(* if True then 3 else 4.4;; *) 
+
+let isAtom = 
+  | x y -> False
+  | x -> True 
+;;
+
+isAtom 3;;
+not (isAtom (3,4));;
+
+
+(* let-terms *) 
+
+let x = 3 in x plusint  x eqcons 6;;
+let id = fun x -> x in id id ;;
+let id = fun x -> x in (id 3,id 3.3) == (3,3.3);;
+
+
+(*** let polymorphism *)
+
+let f x = x in f 3 eqcons 3;;
+let f x = x in Pair (f 3) (f True) == (3,True);; 
+let f = (|x -> x) in Pair (f 3) (f True) == (3,True);;
+let f = (| x -> x) in f f;;
+let f = (|x -> x) in f f 3 eqcons 3;;
+
+
+(*** fixpoints *) 
+
+let rec (f: a -> a) x = x;;
+f 3 eqcons 3;;
+let rec (g: a -> a) = | x -> x;;
+
+g 3 eqcons 3;;
+
+g g  3 eqcons 3;; 
+
+let rec (h : a -> a) x = x;;
+h 3 eqcons 3;;
+h h 3 eqcons 3;;
+h (3,3.3) == (3,3.3);;
+
+
+let rec (factorial: Int -> Int) n = 
+	if n lessthanorequalint 0 
+	then 1 
+	else n timesint (factorial (n minusint 1))
+ ;;
+
+let rec (factorial: Int -> Int) n = 
+	if n lessthanorequalint 0 
+	then 1 
+	else n timesint (factorial (n minusint 1))
+ ;;
+
+
+factorial 5 eqcons 120;;
+
+
+
+(* special cases *) 
+
+
+let pm = 
+| x -> x 
+;;
+
+
+let pm2 = 
+| 0 -> 1 
+| x -> x 
+;;
+
+
+
+| 0 -> 1 
+;;
+
+let (pm3 : Int -> Int) = | x -> x plusint 1 ;;
+
+
+(*
+datatype List a = Nil | Cons of a and List a ;;
+*)
+
+let rec (append: List a -> List a ->List a) = 
+| Nil -> (fun (y:List a) -> y) 
+| Cons x xs -> fun y -> Cons x (append xs y) 
+;;
+
+let rec (flatten :  List (List a) -> List a) = 
+| Nil -> (Nil: list a)  
+| Cons Nil xss -> flatten xss
+| Cons (Cons x xs) xss -> Cons x (append xs (flatten xss))
+(* 
+| Cons xs xss -> append xs (flatten xss) restore ?? 
+*) 
+;;
+
+
+| [] -> [] ;; 
+
+
+(*** path polymorphism *) 
+
+let rec (plus : a * b -> a) = 
+| (_Int as x,_Int as y) -> x plusint  y
+| (_Float as x,_Float as y) -> x plusfloat y
+| (x1 x2,y1 y2) -> plus (x1,y1) (plus(x2,y2)) 
+| (x,y) -> x
+;;
+
+let ((+): a -> a -> a) x y = plus(x,y);;
+
+
+let rec (equal : a * b -> Bool) = 
+| (x1 x2,y1 y2) -> equal (x1,y1) && (equal(x2,y2)) 
+| (x,y) -> x eqcons y 
+;;
+
+
+let ((==): a -> a -> Bool) x y = equal (x,y);;
+let (!=) x y =  not (x == y);;
+
+3==3;;
+3!=4;;
+True == True;;
+True != False;;
+(3,True) == (3,True);;
+
+datatype Bincoprod x y = Inl of x | Inr of y ;;
+
+Inl 3 != Inr 4;;
+
+
+
+
+
+

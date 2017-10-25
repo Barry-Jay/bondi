@@ -1,0 +1,130 @@
+#!/usr/bin/perl -w
+use strict;
+
+my $time_stamp = '1999-10-07 17:33:14 peskine';
+my $version = 0.001;
+
+use Getopt::Long;
+
+sub version_and_exit () {
+    print "reorder-cmx version $version (time stamp: $time_stamp)";
+    exit;
+}
+
+sub help_and_exit () {
+    print "Usage: $0 [OPTION]... [ROOT]...", <<'EOF';
+
+Read a list of dependencies produced by ocamldep from standard input.
+Only lines that describe a dependency for a .cmx file are considered.
+For every ROOT (the base name of an Objective Caml module), gather the
+modules it depends on, and the modules they depend on, etc. Output a
+list of gathered modules such that every module is mentionned exactly
+once, and if module A depends on module B, then B appears before A in
+the output.
+
+Only a limited part of make syntax is understood. The only features that
+are guaranteed to be supported are the basic `TARGET1 TARGET2... :
+SOURCE1 SOURCE2...' syntax (no variable expansion, no function call, no
+pattern), ignoring backslash-newline, and skipping comments.
+
+  --append=TEXT     output TEXT after the list of modules (default: newline)
+  --ignore=REGEXP   ignore modules whose name match REGEXP (multiple values
+                    are or'ed; default: '--ignore=^/usr/local/lib/ocaml')
+  --clear-ignore    clear the `ignore' list
+  --prepend=TEXT    output TEXT before the list of modules (default: empty)
+  --suffix=TEXT     add TEXT after each module name (default: empty)
+  --help            display this help and exit
+  --version         output version information and exit
+EOF
+    exit;
+}
+
+my %options = (
+               append => "\n",
+               ignore => ['^/usr/local/lib/ocaml'],
+               prepend => '',
+               suffix => '',
+              );
+&GetOptions(\%options,
+            "append=s",
+            "clear-ignore", sub { $options{ignore} = [] },
+            "ignore=s@",
+            "prepend=s",
+            "suffix=s",
+            "help", "version")
+  or die "$0: error in the command line, aborting.\n";
+
+version_and_exit if $options{version};
+help_and_exit if $options{help};
+
+
+
+my @modules = ();
+my %dependencies = ();
+
+sub parse () {
+    while (<STDIN>) {
+        chomp;
+        while (s/((\\\\)*)\\$/$1/) {
+            die "premature end of file on standard input" if eof;
+            chomp($_ .= <STDIN>);
+        }
+        next if /^\t/;          # Skip command lines (not that there should be any)
+        s/^.*?((\\\\)*)\\#/$1/;  # Strip comments
+        next unless /^([^:=]*):([^=]*)$/; # Keep only dependency lines
+        #print STDERR "    $1:$2\n";
+        my ($targets, $sources) = ($1, $2);
+        my @targets = split /[ \t]+/, $targets;
+        my @sources = split /[ \t]+/, $sources;
+        foreach my $target (grep { s/\.cmx$// } @targets) {
+            foreach my $source (grep { s/\.cmx$// } @sources) {
+                #print STDERR ". $target ==> $source\n";
+                if (exists $dependencies{$target}) {
+                    push @{$dependencies{$target}}, $source;
+                } else {
+                    $dependencies{$target} = [$source];
+            }
+            }
+        }
+    }
+}
+
+sub add_module ($);
+sub add_module ($) {
+    my $root = $_[0];
+    foreach my $regexp (@{$options{ignore}}) {
+        return if $root =~ /$regexp/;
+    }
+    if (! grep { $_ eq $root } @modules) {
+        #print STDERR "+$root\n";
+        my $i;
+        for ($i = 0; $i < @modules; $i++) {
+            last if grep { $_ eq $root } @{$dependencies{$modules[$i]}};
+        }
+        @modules = (@modules[0..$i-1], $root, @modules[$i..$#modules]);
+        if (exists $dependencies{$root}) {
+            foreach my $dependency (@{$dependencies{$root}}) {
+                #print STDERR " \*$dependency\n";
+                add_module $dependency;
+            }
+        }
+    }
+}
+
+sub output () {
+    print($options{prepend},
+          join($options{suffix}.' ', @modules),
+          (@modules ? $options{suffix} : ''),
+          $options{append});
+}
+
+parse;
+#$, = " "; $\ = "\n"; foreach (keys %dependencies) {print $_, "=>", @{$dependencies{$_}} }; exit;
+foreach my $root (@ARGV) { add_module $root }
+output;
+
+
+## Local Variables:
+## time-stamp-start: "\\$time_stamp *= *[\'\"]"
+## time-stamp-end: "[\'\"]"
+## End:

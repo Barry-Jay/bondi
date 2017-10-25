@@ -1,0 +1,48 @@
+(*
+ * A simple bondi tcp server code 
+ *
+ * Date:      2009-01-23
+ * Version:   0.1a
+ * Authors:   Arun Kumar (arun@it.uts.edu.au)
+ *            Thomas Given-Wilson (tgwilson@it.uts.edu.au)
+ *
+ * The code creates a server on port 1415 of the local machine.
+ * The server will serve three connections before exiting, each
+ * connection performs the following actions:
+ * - Prompt the client for their name
+ * - Wish them goodbye by name
+ * - close the connection.
+ * When all 3 have been dealt with the server stops listening.
+ *
+ * The aim of this code is to demonstrate how a server can be
+ * written using bondi.
+ *)
+
+
+let serverActions prompt iters socket =
+  let doActions cliSock =
+    write prompt cliSock;
+    let name = readline cliSock in
+    writeline ("Goodbye " ^ name) cliSock;
+    close cliSock
+  in
+  let remaining = Ref iters in
+  while (!remaining > 0) do
+    (let client = acceptclient socket in
+    doActions client;
+    remaining = !remaining - 1);
+  close socket
+;;
+
+
+
+let server = openserver (gethost "localhost") 1415 ;;
+let prompt = "Please enter your name: ";;
+
+"\n\nWARNING: The server will not accept input from the shell until all three
+connections have been dealt with. To break out early press Ctrl + C!";;
+
+serverActions prompt 3 server;;
+
+
+

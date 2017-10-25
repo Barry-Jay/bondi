@@ -1,0 +1,20 @@
+(* 
+
+This file contains some problematic examples, now fixed, \plus any
+comments about unresolved difficulties 
+
+*)
+
+(| _ -> True);;
+(| _ -> True) 0;;
+
+
+(| _ref -> True) (Ref 3);;
+let xs = newarray 1.0 5;;
+(| y as _array -> True) xs;;
+
+
+let x = (| True -> False | _ -> True) in x True;;
+
+(* In typing classes, there is some difficulty with alpha-conversion
+of types when typing binary methods. *) 

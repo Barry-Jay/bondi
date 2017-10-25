@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Remove existing test scripts
+rm -rf *.sh  
+make -s check

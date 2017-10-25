@@ -1,0 +1,16 @@
+Bondi on Windows
+
+INSTALLATION:
+
+Extract the zip file to a directory of choice. eg. c:\bondi
+  
+USING BONDI ON WINDOWS:
+
+1. Click Start 
+2. Click Run... Dialog 
+3. type in 'cmd'. This will start windows prompt
+4. On the prompt window type 'cd c:\bondi'
+5. '.\bondi' you should now have bondi toplevel interpreter
+
+
+

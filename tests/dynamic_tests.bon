@@ -1,0 +1,77 @@
+(*
+
+%open "dynamic_tests.bon";;
+
+*)
+
+lin x = 3;;
+
+lin y = Pair;;
+
+lin z = _;;
+
+lin ap_lin = y x z;;
+
+lin x_int = (x:Int);;
+
+
+
+lin y = (4,5);;
+
+lin id_lin = fun x -> x;;
+
+lin ap_lin = id_lin y;;
+
+
+
+(* here are some non-linear terms 
+
+
+lin datum_lin = fun x -> x+1;;
+lin zero_lin = fun x -> 0 ;;
+lin diag_lin = fun x -> (x,x) ;;
+
+*)
+
+let linequal = fun (x: lin a) ->  | {} x -> True | y -> False;;
+linequal [1,2,3] [1,2,3];;
+
+let (dynamicequal: a -> a -> Bool) x = |{}x -> True | _ -> False;;
+dynamicequal [1,2,3] [1,2,3];;
+
+
+
+(* 
+
+let square x = x*x;;
+linequal (square 3) (square 3);;
+
+*)
+
+let elim  = fun (x: lin (a->b)) -> | {y} x y -> y;;
+
+elim (Cons _) [1,2,3];;
+elim (Pair _) (4,5);;
+datatype Tree a = Leaf of a | Node of Tree a and Tree a ;;
+elim Leaf (Leaf 3);;
+
+let (dynamicequal : a -> a -> Bool) x = 
+|{} x -> True 
+| y -> False;;
+
+
+datatype Dummy = Dummy of a;;
+
+let (isDummy: Dummy -> Bool) = 
+| Dummy x -> True;;
+
+(* 
+lin d = Dummy;;
+type error: ty_4477 -> Dummy is not the type of a linear term
+
+let (equalDummy : Dummy -> Dummy -> Bool) = 
+| Dummy x -> | Dummy y -> x == y;;
+type error: ty_4488 is fixed in unification
+
+
+*)

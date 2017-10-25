@@ -1,0 +1,40 @@
+(*
+ * A simple test of the bondi sockets code
+ *
+ * opens a new socket to feeds.smh.com.au port 80
+ * sends an HTTP request for the headlines of an RSS feed
+ * strips the headers from the feed and returns the XML content
+ * closes the socket
+ *
+ * Opens the BSD-LICENCE file and reads it in
+ * opens a (new?) file called "test.txt" and write out a copy of the licence
+ *)
+
+let sock	= opentcp (gethost "feeds.smh.com.au") 80;; 
+let msg		= "GET /rssheadlines/world.xml HTTP/1.0\nHost: feeds.smh.com.au\n\n";;
+
+write msg sock;;
+
+let xml_head = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r";;
+
+let rec get_xml_feed start sock =
+  let ln = readline sock in
+  if (equal (start,ln))
+  then readall sock
+  else get_xml_feed start sock
+;;
+
+let feed = get_xml_feed xml_head sock;;
+
+close sock;;
+
+
+let sock = openfile "BSD-LICENCE";;
+let licence = readall sock;;
+close sock;;
+
+let sock = openfile "test.txt";;
+writeline "A copy of the licence" sock;;
+write licence sock;;
+close sock;;
+

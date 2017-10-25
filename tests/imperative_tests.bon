@@ -1,0 +1,291 @@
+(* 
+%open "../tests/imperative_tests.bon";;
+*)
+
+
+(* this file tests all of the operators mentioned explicitly 
+	in the function eval in eval.ml
+	*)
+
+(*** eqcons *) 
+
+Pair eqcons Pair;;
+3 eqcons 3;;
+'a' eqcons 'a';;
+
+not (Pair eqcons Nil);;
+not (3 eqcons 4);;
+not (3 eqcons 3.0);;
+not ((fun x -> x) eqcons (fun x -> x));;
+
+(* printing tests duplicated from datum_tests.bon *) 
+
+(* printing chars and strings  
+	printchar and printstring do not quote.
+	prim2string adds single or double quotes. 
+	the generic print calls prim2string.
+	To display text use printchar and printstring.
+	To discuss text (as data) use print. 	
+		*) 
+
+printchar 'a';;
+printstring (prim2string 'a');;
+prim2string 'a';;
+'a';;
+
+printstring "abc";;
+printstring (prim2string "abc");;
+prim2string "abc";;
+"abc";;
+
+printchar '\n';;
+printchar 'a';;
+
+printstring "At present, newlines and other whitespace" ; 
+printchar '\n' ; 
+printstring "are only accessible as characters."  ; 
+printchar '\n';
+printstring "To change this, modify the lexer for strings." ;
+printchar '\n'
+;;
+
+
+
+let x = Ref 3 in x = 4; x;;
+let x = Ref 3 in x = 4; !x eqcons 4;;
+let x = Ref 3 in x = !x+2; !x eqcons 5;;
+
+let x = Ref 3 in 
+print !x;
+x = !x - 1 ; 
+print !x;
+x= !x - 1 ;
+print !x;
+printchar '\n';;
+
+let x = Ref 5 in 
+  let rec (c:Unit -> Unit) = | () -> 
+    if (!x > 0) 
+    then (print !x;x = !x minusint 1;c()) 
+    else ()
+	in c();;
+
+let x = Ref 5 in 
+let y = clone x in 
+print !y;
+y = !y -1;
+print !y;
+print !x
+;;
+
+
+(* cloning is shallow *) 
+
+let x = Ref (Ref 5) in 
+let y = clone x in 
+print ! !y;
+!y = ! !y -1;
+print ! !y;
+print ! !x
+;;
+
+
+(* polymorphic references *) 
+
+let x = Ref [];;
+x = [3];;
+x;;
+
+
+
+while False do print "surprise!";;
+
+let x = Ref 20 in 
+printstring "Here are the numbers from 20 to 0:";
+printchar '\n';
+while !x > 0 do 
+  begin 
+	print !x; 
+	printchar ',';
+	x = !x - 1
+  end ;
+printchar '0';
+printchar '\n'
+;;
+
+
+let factorial n = 
+let x = Ref n in
+let res = Ref 1 in 
+while (!x > 1) do (
+  res = !res * !x; x = !x - 1
+	);
+!res
+;;
+ 
+factorial 5 eqcons 120;;
+
+
+
+
+
+(* forall is defined in "../preludes/imperatives_core.bon" *) 
+
+for i = 0 to 3 do  print i;;
+
+let factorial2 n = 
+let res = Ref 1 in 
+(for i = 1 to n do res = !res * i);
+!res;;
+
+
+factorial2 5 eqcons 120;;
+
+(*** _ref *) 
+
+(* 
+_ref;;
+
+produces an error message:
+
+it: ref a
+type error: ref ty_5017 has unconstrained polymorphic references
+
+*) 
+
+
+(| _ref -> True) (Ref 3);;
+(| _ref -> False | _ -> True) 3;;
+
+
+
+(*** arrays *) 
+
+
+let xs = newarray 1.0 5;;
+(lengthv xs) eqcons 5;;
+!(entry(xs,3)) eqcons 1.0;;
+entry(xs,3) = 1.1;
+!(entry(xs,3)) eqcons 1.1;;
+
+(*   _array;; produces a type error *) 
+
+(| y as _array -> True) xs;;
+
+(*** datum ops for arrays *) 
+
+let doubleAny = 
+| x as _ref  -> x = !x+ !x
+| x -> ()
+;;
+
+doubleAny (entry(xs,3));
+!(entry(xs,3)) eqcons 2.2;;
+
+iter doubleAny xs;;
+!(entry(xs,3)) eqcons 4.4;;
+
+xs == xs;;
+
+let ys = xs + xs;;
+!(entry(ys,3)) eqcons 8.8;;
+
+let ys = xs - xs;;
+!(entry(ys,3)) eqcons 0.0;;
+
+let ys = xs * xs;;
+!(entry(ys,3)) eqcons (4.4 * 4.4);;
+
+let ys = xs / xs;;
+!(entry(ys,3)) eqcons 1.0;;
+
+not (xs < xs);;
+xs <= xs;;
+not (xs > xs);;
+xs >= xs;;
+
+
+(*** generic queries for arrays *) 
+
+apply2all (fun x -> x+x) xs;;
+!(entry(xs,3));;
+
+let (bigfloat: Float -> a -> Maybe Float) r = 
+  | (x:Float) -> if x > r then (Some) x else None 
+| _ -> None
+;;
+
+select (bigfloat 4.2) xs == [4.4];;
+select (bigfloat 1.0) xs ==  [2.,4.4,2.,2.,2.];;
+
+
+
+(* ref and polymorphism  *) 
+
+let x = Ref 1 in x = 2 + !x; !x eqcons 3;;
+
+
+let x = Ref [1] in x = Cons 2 !x;!x == [2,1];;
+
+
+
+
+(* a type error, [] is too polymorphic to be assigned  
+
+let x = Ref [] in 
+x = Cons 1 !x;
+x = Cons True !x;
+!x;;
+
+*)
+
+let x = Ref ([]: List Int) in x = Cons 1 !x; !x == [1];;
+
+
+let x = Ref 3 in 
+let y = x in 
+y = 4;
+!x eqcons 4;;
+
+(* but the following fails because of Top in the type of the assigned ref 
+
+let x = 3 in 
+(x:Top) =  True;
+x;;
+
+let x = Ref 3 in 
+let y = (x: ref Top) in 
+y = True;
+x;;
+
+*)
+
+(* no assignment to arbitrary terms 
+
+let fst = | (x,y) -> x;;
+
+
+let x = Ref (2,3) in fst x = 4; !x;;
+let x = Ref (2,3) in fst x;;
+let x = Ref (2,3) in fst !x = 4; !x;;
+
+
+but the following work ... 
+
+*) 
+
+let x = (Ref 2,Ref 3) in fst x = 4; x;;
+
+
+let y = Ref 2 in 
+let z = Ref 3 in 
+let x = (!y,!z) in 
+y = 5;
+x == (2,3);;
+
+let y = Ref 2 in 
+let z = Ref 3 in 
+let f  = | () -> (!y,!z) in 
+y = 5;
+f () == (5,3);;
+

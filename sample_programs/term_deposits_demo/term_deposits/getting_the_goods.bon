@@ -1,0 +1,236 @@
+(*
+Title:    Getting the Goods with Concurrent bondi
+Version:  1.0
+Date:     2011-01-12
+Authors:  Thomas Given-Wilson
+          Original code by Barry Jay, XML Parsing by Jose Vergara Medina
+
+This is the code for the abstract
+  "Getting the Goods with Concurrent bondi"
+submitted to PLACES 2011 (http://places11.di.fc.ul.pt/).
+
+This code works best under with the following environment variable in
+your (bash like) environment:
+export BONDI_LIB_DIR=<path to the directory holding the bondi executable>
+
+If you do not have the above, then some manual fiddling may be required
+to configure the standard prelude, or to change into the appropriate
+working directory.
+
+The following command will open/run this file:
+%open "getting_the_goods.bon";;
+
+NOTE: This version does not load XML/Cloud bank as this does not appear
+      in the abstract. All Cloud bank code is commented out and marked.
+*)
+
+(* BEGIN CLOUD BANK CODE
+(* Clean up any previous data from running the XML parsing. *)
+sysexec "rm bank.xsd.bon cloud.xml.bon";;
+END CLOUD BANK CODE *)
+
+(*
+Challenge: To discover term deposits offered by bank services sourced
+from different banks.
+*)
+
+
+
+(* ------  NSW Bank uses Abstract Data Types  ------ *)
+
+(* Bank accounts, with: account name and balance. *)
+datatype Account = Acct of String and Float ;;
+
+(* Term Deposits with: bank name, product name, minimum deposit,
+ * rate, period, government guarantee. *)
+datatype TermDepositADT =
+   TDADT of String and String and Int and Float and Int and Bool;;
+
+(* Bank database with: bank name, bank account list, and term deposit list *)
+datatype BankADT = BankADT of String and List Account and List TermDepositADT
+(* Augmented pretty printing. *)
+with toString += | BankADT n _ _ -> n;;
+
+(* Create an instance of NSW Bank with two accounts and two term deposits. *)
+let acct1 = Acct "John Citizen" 2222.00;;
+let acct2 = Acct "Jane Doe" 2736.30;;
+let tdnsw1 = TDADT "NSW" "Standard TD" 1000 4.7 12 True;;
+let tdnsw2 = TDADT "NSW" "Short and cheap TD" 500 3.3 1 False;;
+let nsw = BankADT "NSW" [acct1,acct2] [tdnsw1,tdnsw2];;
+
+
+(* ------  Victoria Bank uses OO classes  ------ *)
+
+(*
+It happens to have the same type of accounts, but this need not be so.
+Its term deposits have less information (but could have more). *)
+
+(* A class for term deposits *)
+class TermDepositOO {
+minDep: Int;               (* Minimum deposit *)
+rate: Float;               (* Rate *)
+period: Int;               (* Period *)
+(* Get and set methods. *)
+getMinDep = { | () -> !this.minDep}
+setMinDep = { fun n -> this.minDep = n}
+getRate = { | () -> !this.rate}
+setRate = { fun n -> this.rate = n}
+getPeriod = { | () -> !this.period}
+setPeriod = { fun n -> this.period = n}
+(* Don't print anything. *)
+with toString += | (x:TermDepositOO) -> ""
+}
+
+(* A class for the Victoria Bank *)
+class BankOO {
+name: String;              (* Bank name *)
+accts: List Account;       (* List of accounts, same ADT as NSW *)
+tds: List TermDepositOO;   (* List of term deposit classes. *)
+(* Get and set methods. *)
+getName = { | () -> !this.name}
+setName = { fun n -> this.name = n}
+getAccts = { | () -> !this.accts}
+setAccts = { fun n -> this.accts = n}
+getTDs = { | () -> !this.tds}
+setTDs = { fun n -> this.tds = n}
+(* Just print the bank name. *)
+with toString += | (x:BankOO) -> x.getName()
+}
+
+(* Create an instance of the Victoria Bank term deposits
+ * and the bank database using classes. *)
+let tdvic = new TermDepositOO;;
+tdvic.setMinDep(2000);
+tdvic.setRate(4.6);
+tdvic.setPeriod(3);;
+
+let vic = new BankOO ;;
+vic.setName("Vic");
+vic.setAccts([acct2]);
+vic.setTDs([tdvic]);;
+
+
+(* ------  Find Term Deposits without knowing the data management  ------ *)
+
+(* Here the challenge is to find all the term deposits without requiring
+ * each bank to rebuild their systems to use a single programming paradigm.
+ * For the remainder of this code we shall consider four pieces of data
+ * as relevant to term deposits: the bank that offers the term deposit, 
+ * the minimum amount, the rate, and the period. *)
+
+(* A function to display term deposits. *)
+let display b m r p = println ("Term deposit from " ^ b ^
+    " with minimum $" ^ (toString m) ^ ", rate " ^ (toString r) ^
+    "%, and period " ^ (toString p) ^ " months.")
+;;
+
+
+(* Create a function to find term deposits with a free variable for the
+ * shape that should be used to match the local term deposit representation.
+ * The "iter" function applies it's first argument to every part of a
+ * data structure using path polymorphism. When the supplied shape 
+ * successful matching against any part of the data structure then the desired
+ * term deposit data has been found and can be passed to another function (f) 
+ * for further processing, if matching fails then do nothing. *)
+let findTDs f = fun (shape: lin (String -> Int -> Float -> Int ->  a)) ->
+  iter (| {b,m,r,p} shape b m r p -> f b m r p
+        | _ -> ())
+;;
+
+(* A simple data type to hold term deposit offering banks.
+ * The first component is a the shape that captures the data about term deposits,
+ * the second is the bank.
+ * Note: the result type of the shape and the banks have existential types here,
+ *       they must have a type, but what it is is unimportant. *)
+datatype Bank = Bank of (lin (String -> Int -> Float -> Int -> a)) and b;;
+
+(* Now a function to search any data structure and use the correct shape
+ * to find term deposits from a bank.
+ * Note: no banks with shapes have been defined yet! *)
+let allTDs = iter (| Bank shape bank -> findTDs display shape bank | _ -> ());;
+
+(* Define the shape for NSW Bank *)
+lin shapeNSW b m r p = TDADT b _ m r p _ ;;
+
+(* Define the shape for Victoria Bank using a helper function *)
+let getTDVicData (x:TermDepositOO[a]) = ("Vic",
+             x.getMinDep(),x.getRate(),x.getPeriod());;
+lin shapeVic b m r p = view(getTDVicData,(b,m,r,p)) as (_:TermDepositOO);;
+
+(* Put both banks into a single representation of all banks. *)
+let banks = [Bank shapeNSW nsw, Bank shapeVic vic];;
+
+(* Display all the term deposits in the banks data. *)
+allTDs banks;;
+
+
+(* BEGIN CLOUD BANK CODE
+(* ------  Cloud bank uses XML  ------ *)
+
+(* XML processing  developed by  Jose Vegara Medina, 
+ * with help from Thomas Given-Wilson and Arun Kumar
+ * The following code loads the cloud bank from XML. *)
+
+(* Open some helpful code/libraries. *)
+%open "../containers/containers.bon";;
+%open "../xml/parser_combinators.bon";;
+%open "../xml/xmlparsers.bon";;
+
+
+(* Generate and process bank.xsd.bon *)
+parseXmlSchema "bank.xsd";;
+%open "bank.xsd.bon" ;;
+
+(* Generate and process cloud.xml.bon *)
+parseXml xmlPbank "cloud.xml";;
+%open "cloud.xml.bon";;
+
+(* Pretty printing. *)
+toString += | Banks [Bank (Name n,_,_)] -> n ;;
+END CLOUD BANK CODE *)
+
+(* ------  Shifting to the concurrent setting.  ------ *)
+
+(* In the concurrent setting the main challenge is for the bank service
+ * and the customer to find each other and communicate.  To find each
+ * other requires that they have some small amount of shared data, namely
+ * a parameter that describes the product of interest. *)
+   
+
+(* The agreed upon term deposit and relevant attributes and types *)
+let tdDesc = "Term Deposit (Bank:String, Minimum:Int, Rate:Float, Period:Int)";;
+
+(* Define security here to be the identity function as
+ * this is beyond the scope of this example. *)
+let security = fun x -> x;;
+
+(* NSW Bank term deposit service *)
+let descNSW = "NSW Bank" in
+cpc descNSW ~tdDesc \q -> security q shapeNSW nsw;;
+
+(* Vic Bank term deposit service *)
+let descVic = "Vic Bank" in
+cpc descVic ~tdDesc \q -> security q shapeVic vic;;
+
+(* BEGIN CLOUD BANK CODE
+(* Cloud Bank web service. *)
+(* First define the shape, then the service. *)
+lin shapeCloud i m r p = TermDeposit (TdName i,MinDeposit m, Period p,Rate r);;
+let descCloud = "Cloud Bank" in
+cpc descCloud ~tdDesc \q -> security q shapeCloud cloud;;
+END CLOUD BANK CODE *)
+
+(* Define the customer query *)
+let query session = findTDs (fun b m r p -> cpc ~session b m r p -> ());;
+
+(* Display the results from a session. *)
+let displayFromSession session = !(cpc ~session \b \m \r \p -> display b m r p);;
+
+(* Declare the customer process *)
+begin
+! rest session in 
+  cpc \bank tdDesc (query session) -> (
+      println ("Querying " ^ bank); 
+          displayFromSession session)
+end;sleep 1.0;;
+

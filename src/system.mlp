@@ -1,0 +1,17 @@
+(* BONDI version must be moved to ../VERSION *)
+
+let version = "2.09" 
+let standard_library_default = "%%LIBDIR%%"
+let standard_library =
+  try
+    Sys.getenv "BONDI_LIB_DIR"
+  with Not_found ->
+  try
+    Sys.getenv "BONDILIB"
+  with Not_found ->
+    standard_library_default
+
+let architecture = "%%ARCH%%"
+let model        = "%%MODEL%%"
+let system       = "%%SYSTEM%%"
+;;

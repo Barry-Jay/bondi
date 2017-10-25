@@ -1,0 +1,497 @@
+(* %open "xmlparsers.bon";; *)
+
+
+(* the name of the .xsd.bon file *)
+let xmlparsers_filename = Ref "";;
+(* the name of the .xml.bon file *)
+let xmlterms_filename = Ref "";;
+(* name of the .xml filename *)
+let xml_filename = Ref "";;
+let xml_writing_types = Ref True;;
+
+let xml_head = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r";;
+
+let getInfo adress msg =
+let sock = opentcp (gethost adress) 80 in 
+let rec get_xml_feed start sock =
+  let ln = readline sock in
+  if (equal (start,ln))
+  then readall sock
+  else get_xml_feed start sock
+in
+write msg sock;
+let content = get_xml_feed xml_head sock in
+close sock;content
+;;
+
+let appendstringtofile str filename= 
+let sock = openfile filename in
+(writeline str sock;close sock);;
+
+let writestringtofile str filename=
+let sock = openfile filename in
+(writeline str sock;close sock);;
+
+let readstringfromfile filename =
+let sock = openfile filename in
+let content = readall sock in
+let stream = new ContainerList<Char> in
+stream.data = (tokenize content);close sock;stream;;
+
+(*
+let adress = "feeds.smh.com.au";;
+let msg = "GET /rssheadlines/world.xml HTTP/1.0\nHost: feeds.smh.com.au\n\n";;
+
+let xmlStream = new ContainerList<Char>;;
+xmlStream.data = tokenize (getInfo adress msg);;
+*)
+
+
+let openXML xmlDoc = (readstringfromfile xmlDoc);;
+
+
+
+let (printXmlList: List String ->String -> String) childsList elemName = 
+let rec (toStringEntries: List String -> String) = 
+| Nil -> ""
+| Cons x Nil -> x
+| Cons x xs -> (x) ^ "," ^ (toStringEntries xs)
+| _ -> "_"
+in 
+(capitalizestring elemName)^"s [" ^ (toStringEntries childsList) ^ "]"
+;;
+
+
+(* XML basic types*)
+let xmlStringP = (getParser_str "xs:string") >> return ("String");;
+let xmlIntP = (getParser_str "xs:integer") >> return ("Int");;
+let xmlFloatP = (getParser_str "xs:float") >> return ("Float");;
+let xmlUDT = (returnStr (many letter)) >>= (
+| (x:String) -> return ((capitalizestring x)^"T")
+| _ -> Exception "xmlUDT"
+);;
+let xmlTypesP = ((xmlStringP <|> xmlIntP) <|> xmlFloatP) <|> xmlUDT;;
+
+
+(* tokens *)
+(* wspace includes space, end of line, tab and line feed *)
+let wspace = (many ((((spchar ' ') <|> (spchar '\n')) <|> (spchar '\t')) <|> (spchar '\013')));;
+let closeSimpleElemTagP = (getParser_str "/>");;
+let closeUElemTagP =  (spchar '>');;
+let cDQuoteP = (getParser_str "\"");;
+let miscChars = getChoiceParser_str ".\\&#\"/:;-+=,_@?|!%()-$^{}\\";;
+
+
+
+let openElemTagP = wspace >> (getParser_str "<xs:element");;
+let closeElemTagP = wspace >> (getParser_str "</xs:element>");;
+let openComplexTagP = wspace >> (getParser_str "<xs:complexType>");;
+let openComplexTypeTagP = wspace >> (getParser_str "<xs:complexType");;
+let openSimpleTypeTagP = wspace >> (getParser_str "<xs:simpleType");;
+let closeSimpleTypeTagP = wspace >> (getParser_str "</xs:simpleType>");;
+let closeComplexTagP = wspace >> (getParser_str "</xs:complexType>");;
+let openSequenceTagP = wspace >> (getParser_str "<xs:sequence>");;
+let closeSequenceTagP = wspace >> (getParser_str "</xs:sequence>");;
+let openChoiceTagP = wspace >> (getParser_str "<xs:choice>");;
+let closeChoiceTagP = wspace >> (getParser_str "</xs:choice>");;
+let openAllTagP = wspace >> (getParser_str "<xs:all>");;
+let closeAllTagP = wspace >> (getParser_str "</xs:all>");;
+let restrictionP = wspace >> (getParser_str "<restriction");;
+let noAttr = (many (except '>')) >> (spchar '>');;
+
+
+let minOccurs = ((getParser_str "minOccurs=\"") 
+		  >> (oneOrMany digit)) >> cDQuoteP;;
+
+let maxOccurs = ((getParser_str "maxOccurs=\"") 
+		>> 
+		((oneOrMany digit) 
+		  <|> (getParser_str "unbounded"))) 
+		       >> cDQuoteP ;;
+ 
+
+let elemNameP = ((getParser_str "name=\"") 
+		  >> (returnStr (many letter))) 
+		  >>= (fun elemName -> (cDQuoteP >> return(elemName)));;
+
+
+let elemTypeP = ((getParser_str "type=\"") 
+		  >>  xmlTypesP) 
+		 >>= (fun elemType -> (cDQuoteP >> return (elemType)));;
+
+
+let baseTypeP = ((getParser_str "base=\"") 
+		  >> (returnStr (many letter))) 
+		  >>= (fun baseType -> (cDQuoteP >> return (baseType)));;
+
+let returnStrType listChar = "\"" ^ (foldright (^) (map makeStr listChar) "") ^ "\"";;
+let returnStr2 listChar = (foldright (^) (map makeStr listChar) ) "";;
+
+let assembleFunSeq p1 =  "xmlP"^p1^" >>= (fun "^p1^"Var -> ";;
+
+let stringParser = ((letter <|> digit) <|> miscChars)
+		   >>= (
+| (x:Char) -> ((many (((letter <|> digit) <|> (spchar ' ')) <|> miscChars))) 
+		   >>= (
+
+	| [] -> return (returnStrType [x])
+	| (Cons _Char _) as xs -> return (returnStrType (Cons x xs))
+	| _ -> Exception "stringParser"
+)
+| _ -> Exception "stringParser"
+);;
+
+
+let ustringParser = (letter <|> digit) 
+		    >>= (
+| (x:Char) -> (many ((letter <|> digit) <|> (spchar ' ')))
+		   >>= (
+	| [] -> return (returnStr2 [x])
+	| (Cons _Char _) as xs -> return (returnStr2 (Cons x xs))
+	| _ -> Exception "ustringParser"
+)
+| _ -> Exception "ustringParser"
+);;
+
+
+
+let intParser = (returnStr (digit >>= (
+| (x:Char) -> (many (digit)) 
+		   >>= (
+	| [] -> return (returnStr2 [x])
+	| (Cons _Char _) as xs -> return (Cons x xs)
+	| _ -> Exception "intParser"
+)
+| _ -> Exception "intParser"
+)));;
+
+
+let floatParser =  (intParser >>= (
+| (x:String) -> (spchar '.') 
+		    >> (intParser >>= (
+| (y:String) -> (return (x^"."^y))
+| _ -> Exception "floatParser"
+))
+| _ -> Exception "floatParser"
+))
+;;
+
+
+let getTypesParser =
+| "UString" -> ustringParser
+| "String" -> stringParser
+| "Int" -> intParser
+| "Float" -> floatParser;;
+
+let isPrimitiveType =
+| "String" -> True
+| "Int" -> True
+| "Float" -> True
+| _ -> False;;
+
+
+let assembleElemStrAux elemName elemType elemParent pfx= 
+(* Creates a bondi string that holds the declaration of a bondi xml  type 
+The values of pfx  "E" or "T" indicate if the child elements are being defined in an xml element declaration or in an xml type declaration *)
+"datatype " ^ (capitalizestring elemName) ^ "E_"^(capitalizestring elemParent) ^pfx^"=" ^(capitalizestring elemName) ^ " of " ^  elemType^
+" \n with \n toString += |"^(capitalizestring elemName)^" x ->"^ 
+" \n \"<"^elemName^">\"^(toString x)^\"</"^elemName^">\";;";;
+
+let writeElemStr elemName elemType elemParent pfx= 
+let elementStr = assembleElemStrAux elemName elemType elemParent pfx 
+in 
+if(!xml_writing_types) then 
+(appendstringtofile (elementStr^" \n") (!xmlparsers_filename^".xsd.bon")) 
+else (); 
+elementStr;;
+
+
+let assembleSimpleElemStr elemName elemType elemParent pfx= 
+"datatype " ^ (capitalizestring elemName) ^" =" ^ (capitalizestring elemName) ^ " of " ^elemType^
+" \n with \n toString += "^(capitalizestring elemName)^" x -> "^
+"\n \"<"^elemName^">\"^x^\"</"^elemName^">\";;";;
+
+let assembleElementName elemName elemParent pfx = (capitalizestring elemName) ^ "E_"^(capitalizestring elemParent) ^pfx;;
+
+let rec (assembleSeq: List (String*String) -> String) listElems =
+match listElems with
+ | Cons (x,y) Nil ->x^""
+ | Cons (x,y) z -> (x^" * ")^(assembleSeq z) 
+  ;;
+
+let rec (assembleParserSeq: List (String*String) -> String) listElems =
+match listElems with
+ | Cons (x,y) Nil ->x^""
+ | Cons (x,y) z -> (x^" * ")^(assembleSeq z) 
+  ;;
+
+let rec (unzipParserList: List (String*String) -> List String) listElems =
+match listElems with
+ | Cons (x,y) Nil ->(Cons y Nil)
+ | Cons (x,y) z -> append (Cons y Nil) (unzipParserList z) 
+  ;;
+
+let rec (assembleXmlParserSeq: List (String*String) -> String) listElems =
+match listElems with
+ | Cons (x,y)  Nil ->"\"^("^y^"Var)^\""
+ | Cons (x,y) z  -> ("\"^("^y^"Var)^\",")^(assembleXmlParserSeq z)
+;;
+
+let rec (getClosingParens: List (String * String) -> String) listElems =
+match listElems with
+ | Cons x Nil -> ")"
+ | Cons x y -> ")"^(getClosingParens y) 
+  ;;
+
+
+(* assembles the code of a parser for simple xml types like:
+ *<book>bondi web programming</book> 
+ *)
+let assembleElementParser elemName  elemType = 
+"let xmlP"^elemName^
+" = ((((getParser_str \"<"^elemName^"\") >> noAttr) >> wspace)  >>  (getTypesParser \""^elemType^"\")) >>= (fun x ->  ((getParser_str \"</"^elemName^">\") >> wspace) >> return ((\""^(capitalizestring elemName)^" \" ^x)));;";;
+
+let checkElemType elemType = if(elemType == "String") then "UString" else elemType;;
+
+(* assembles the code of a parser for simple xml types like:
+ * <books>*
+ *)
+let assembleManyElementParser elemName  elemType = if (isPrimitiveType elemType) then 
+"let xmlP"^elemName^" = (many (((wspace >> (((getParser_str \"<"^elemName^
+"\") >> noAttr) >> wspace) >>  (getTypesParser \""^(checkElemType elemType)^
+"\")) >>= (fun x -> ( (getParser_str \"</"^elemName^
+">\") >> wspace) >> return x))) >>= (fun x-> return (\""^
+(capitalizestring elemName)^" \"^(toString x)));;" 
+else 
+"let xmlP"^elemName^" = many (xmlP"^elemType^");;";;
+
+let assembleElem  elemName elemType elemParent pfx = 
+(writeElemStr elemName elemType elemParent pfx);
+if(not !xml_writing_types) then 
+(appendstringtofile  (assembleElementParser elemName elemType) (!xmlparsers_filename^".xsd.bon")) 
+else ();
+((assembleElementName elemName elemParent pfx),elemName);;
+
+let assembleElemRep  elemName elemType elemParent pfx = (writeElemStr elemName ("List " ^elemType) elemParent pfx);if(not !xml_writing_types) then 
+(appendstringtofile  (assembleManyElementParser elemName elemType) (!xmlparsers_filename^".xsd.bon")) else ();((assembleElementName elemName elemParent pfx),elemName);;
+
+
+let (assembleSequenceParser: String -> List (String * String) -> String ) varElemParent listElemChilds = 
+"let xmlP"^varElemParent^" = ((((getParser_str \"<"^varElemParent^">\")"^
+" >> ( wspace >> ("^
+(* create a parser using the parsers of the childs of this complex element *)
+(foldright (^) (map assembleFunSeq (unzipParserList listElemChilds)) "")^
+" (wspace >> ( (getParser_str \"</"^varElemParent^">\")))"^ 
+">>  (return (\""^(capitalizestring varElemParent)^
+" ("^(assembleXmlParserSeq listElemChilds)^");;\" "^(getClosingParens listElemChilds)^")))))));;";;
+
+let assembleSequenceRep2Parser varElemParent listElemChilds = 
+"let xmlP"^varElemParent^" = (many ((((wspace >> ((getParser_str \"<"^varElemParent^"\") " 
+^">> noAttr))"^
+" >> ( wspace >> ("^
+(foldright (^) (map assembleFunSeq (unzipParserList listElemChilds)) "")^
+" (wspace >> ((getParser_str \"</"^varElemParent^">\"))) >>  (return (\""^(capitalizestring varElemParent)^
+" ("^(assembleXmlParserSeq listElemChilds)^")\" "^
+(getClosingParens listElemChilds)^")))))))) "^
+">>= (fun x -> return ((printXmlList x \""^varElemParent^"\")));;";;
+
+
+let assembleSequence2Parser varElemParent listElemChilds = 
+"let xmlP"^varElemParent^" = ((((getParser_str \"<"^varElemParent^">\")"^" >> ( wspace >> ("^
+(foldright (^) (map assembleFunSeq (unzipParserList listElemChilds)) "")^
+" (wspace >> ( (getParser_str \"</"^varElemParent^">\"))) >>  (return (\""^(capitalizestring varElemParent)^
+" ("^(assembleXmlParserSeq listElemChilds)^");;\" "^
+(getClosingParens listElemChilds)^")))))));;";;
+ 
+(* complex parsers *)
+let xmlSimpleElem = 
+((openElemTagP >> wspace) >> elemNameP ) 
+>>= (fun varElemName -> ((wspace >> elemTypeP) 
+>>= (fun varElemType ->  (  (wspace >> closeSimpleElemTagP) 
+>> return (assembleSimpleElemStr varElemName varElemType))) ));;
+
+let elemOccurs varElemParent varElemName varElemType pfx = 
+((((wspace >> minOccurs) >> wspace) 
+>> maxOccurs) >> closeSimpleElemTagP) 
+>>= (fun x -> (return (assembleElemRep varElemName (varElemType) varElemParent pfx)));;
+
+let elemNoOccurs varElemParent varElemName varElemType pfx = 
+((wspace >> closeSimpleElemTagP) 
+>>= (fun x -> (return (assembleElem varElemName varElemType varElemParent pfx))));;
+
+
+(* Parser for local simple types*)
+let xmlPfxSimpleElem varElemParent pfx = 
+((openElemTagP >> wspace) >> elemNameP ) 
+>>= (fun varElemName -> ((wspace >> elemTypeP) 
+>>= (fun varElemType -> ((elemNoOccurs varElemParent varElemName varElemType pfx) <|> (elemOccurs varElemParent varElemName varElemType pfx)) )));;
+
+let manyPfxSimpleElem  varElemParent pfx =  
+(many ((xmlPfxSimpleElem varElemParent pfx) 
+>>= (fun x ->  (wspace >> return x) )));;
+
+let manyPfxElem  varElemParent pfx complexParser =  
+(many ((xmlPfxSimpleElem varElemParent pfx) <|> complexParser varElemParent pfx))  
+>>= (fun x -> wspace >> return x);;
+
+
+(* Parsers for sequece, choice and alternation*)
+
+let sequenceParser varElemName pfx =  (((openSequenceTagP >>wspace)  
+>> (manyPfxSimpleElem varElemName pfx)) 
+>>= (fun varChildElems ->  ((closeSequenceTagP >> wspace) >> return varChildElems))) 
+>>= (fun x -> let elementDec = "datatype "^((capitalizestring varElemName) ^pfx)^ " = " ^
+(capitalizestring varElemName) ^ " of (" ^ (assembleSeq x) ^ ") ;;" 
+in 
+if(!xml_writing_types) then 
+(appendstringtofile elementDec (!xmlparsers_filename^".xsd.bon")) 
+else (appendstringtofile (assembleSequenceParser varElemName x) (!xmlparsers_filename^".xsd.bon")); 
+return (elementDec));;
+
+
+let sequenceRepParser varElemName pfx complexParser =  
+((openSequenceTagP >>wspace)  
+>> (manyPfxElem varElemName pfx complexParser)) 
+>>= (fun varChildElems ->  ((closeSequenceTagP >> wspace) 
+>> return varChildElems));;
+
+let choiceParser varElemName pfx =  
+((openChoiceTagP >>wspace)  
+>> (manyPfxSimpleElem varElemName pfx)) 
+>>= (fun varChildElems ->  ((closeChoiceTagP >> wspace) 
+>> return varChildElems));;
+
+let alternationParser varElemName pfx =  
+((openAllTagP >>wspace)  
+>> (manyPfxSimpleElem varElemName pfx)) 
+>>= (fun varChildElems ->  ((closeAllTagP >> wspace) 
+>> return varChildElems));;
+
+
+let complexContent varElemName pfx = (sequenceParser varElemName pfx);;
+
+
+let atomicTypeDecl varElemName = 
+elemTypeP 
+>>= (fun varElemType ->  ((wspace >> closeSimpleElemTagP) 
+>> return (writeElemStr varElemName varElemType)));;
+
+
+let xmlcomplexTypeE varElemName = 
+((((openComplexTagP >> wspace) 
+>> (complexContent varElemName "E")) >> wspace) 
+>> closeComplexTagP);;
+
+(* recursion *)
+let xmlcomplexRepTypeE varElemName complexParser = 
+((openComplexTagP >> wspace) 
+>> (sequenceRepParser varElemName "E" complexParser)) 
+>>= (fun x -> ((wspace) >> closeComplexTagP) 
+>> return x);;
+
+let elemComplexNoOccurs varElemName xmlComplexElem = 
+(closeUElemTagP) >> (xmlcomplexTypeE varElemName);;
+
+(* recursion *)
+let elemComplexOccurs  varElemName  xmlComplexElem = 
+((((minOccurs >> wspace) >> maxOccurs) 
+>> closeUElemTagP) 
+>> (xmlcomplexRepTypeE varElemName xmlComplexElem));;
+
+let complexElemListPrinter varElemName = 
+"\n with "^
+"\n toString += |"^(capitalizestring varElemName)^" x ->"^
+"\n let rec (toStringEntries: List a -> String) ="^
+"\n | Nil -> \"\" "^
+"\n | Cons x Nil -> \"\\t\" ^(toString x) "^
+"\n | Cons x xs ->  \"\\t\"^(toString x) ^\"\\n\" ^ (toStringEntries xs)"^ 
+"\n | _ -> \"\" "^
+"\n in"^
+"\n \"<"^varElemName^">\\n\"^ (toStringEntries x) ^ \"\n</"^varElemName^">\";;";;
+
+let complexElemPrinter varElemName = 
+"\n with "^
+"\n toString += |"^(capitalizestring varElemName)^" x -> "^
+"\n let rec (fromTuple: a -> String) = "^
+"\n | (x,y) -> \"\\t\" ^(toString x) ^\"\\n\" ^ (fromTuple y) "^
+"\n | x -> \"\\t\"^(toString x) "^
+"\n in"^ 
+"\n \"\\n<"^varElemName^">\\n\"^(fromTuple x)^\"\\n</"^varElemName^">\\n\"";;
+
+let elementDec varElemParent pfx varElemName subElem = 	
+let capElemParent = (capitalizestring varElemParent) in
+let capElemeName =  (capitalizestring varElemName) in
+"datatype "^(capitalizestring varElemName) ^"T_"^
+(capitalizestring varElemParent)^ pfx ^" = " ^  (capitalizestring varElemName) ^
+" of (" ^ (assembleSeq subElem) ^ ") "^ (complexElemPrinter varElemName)^ ";; \n"^  
+"datatype "^capElemeName^pfx^"_"^capElemParent^pfx^" = "^
+capElemeName^"s"^" of List "^capElemeName^"T"^"_"^capElemParent^pfx^
+(complexElemListPrinter (varElemName^"s"));;
+
+let writeXmlComplexElem varElemParent pfx varElemName subElem = 
+if(!xml_writing_types) then 
+appendstringtofile (elementDec varElemParent pfx varElemName subElem)(!xmlparsers_filename^".xsd.bon")
+else
+appendstringtofile (assembleSequenceRep2Parser varElemName subElem) (!xmlparsers_filename^".xsd.bon");;
+
+
+let rec xmlComplexElem varElemParent pfx = 
+(((openElemTagP >> wspace) >> elemNameP ) 
+>>= (fun varElemName ->  (wspace 
+			  >> ((elemComplexNoOccurs varElemName xmlComplexElem) <|> (elemComplexOccurs varElemName xmlComplexElem))) 
+			  >>= (fun subElem -> writeXmlComplexElem varElemParent pfx varElemName subElem;
+					      return (((capitalizestring varElemName) ^ pfx ^"_"^(capitalizestring varElemParent) ^pfx),varElemName)))) 
+			  >>= (fun x -> closeElemTagP >> return x);;
+
+ 
+let xmlcomplexType = ((openComplexTypeTagP >> wspace) >> elemNameP)
+>>= (fun x ->  ((wspace >> closeUElemTagP ) >> wspace) 
+     >> (((complexContent x "T") >> wspace) >> closeComplexTagP)
+     );;
+
+
+let rec (getClosingParens1: List String -> String) listElems = 
+match listElems with
+ | Cons x Nil -> x^"];;"
+ | Cons x y -> (x^",")^(getClosingParens1 y) 
+  ;;
+
+(*
+(* utility functions for parsing file names *)
+let cleanFiles filename = 
+(writestringtofile "" (filename));;
+*)
+
+let filenameParser filename =  ((returnStr (many (letter <|> (spchar '/')))) 
+>>= (fun x -> xmlparsers_filename=x; return x)) (make_list (tokenize filename));;
+
+let parseSchema filename = filenameParser filename; 
+(many (xmlcomplexType <|> xmlComplexElem "" "")) (readstringfromfile filename);;
+
+
+let parseXmlSchema filename =   filenameParser filename;
+(* cleanFiles (!xmlparsers_filename^".xsd.bon"); *)
+xml_writing_types=True;parseSchema filename;
+xml_writing_types=False;parseSchema filename;;
+
+(*
+let cleanFile filename = (writestringtofile "" filename);;
+*)
+
+let xmlFileNameParser = 
+(returnStr ((many ((many letter) 
+>> (spchar '/'))) 
+>> (many letter))) 
+>>= (fun x -> (spchar '.') 
+>> (xml_filename=x;return x));;
+
+let xmlFileParser filename =  
+xmlFileNameParser filename;
+((returnStr (many (letter <|> (spchar '/')))) 
+>>= (fun x -> (spchar '.') 
+>> (xmlterms_filename=x;return x))) filename;;
+
+let parseXml parser filename =  ((xmlFileParser (make_list (tokenize filename)));
+(* (cleanFile ((!xmlterms_filename)^".xml.bon")); *)
+parser >>= (fun x  -> print x;(appendstringtofile  ("let "^(!xml_filename)^" = "^x^";;") (((!xml_filename)^".xml.bon"))); 
+(return x))) (openXML filename);;

@@ -1,0 +1,4 @@
+let iscgreater      = 'c' greaterthanchar     'a';;
+let isgreaterequal  = 'a' greaterthanorequalchar  'a';;
+let isless          = 'a' lessthanchar        'c';;
+let islessequal     = 'c' lessthanorequalchar 'c';;

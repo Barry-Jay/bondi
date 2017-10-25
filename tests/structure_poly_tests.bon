@@ -1,0 +1,15 @@
+(*
+%open "../tests/structure_poly_tests.bon";;
+*)
+
+let plusOne x = x plusint 1;;
+
+let rec (mapList : (a -> b) -> List a -> List b) f = 
+| Nil -> Nil
+| Cons x xs -> Cons (f x) (mapList f xs)
+;;
+mapList plusOne [1,2,3] == [2,3,4];;
+
+
+
+map;; 

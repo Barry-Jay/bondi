@@ -1,0 +1,353 @@
+#!/bin/bash
+# Program: generate-tests-sh 
+# Purpose: This programs does the following:
+#            o) Uses Automake to generate test cases                           
+#            o) Generates tests for bon files in a directory
+#            o) Generates diff tests for existing .out files in the directory  
+#    Date: 22/05/2009
+#  Author: Arun Kumar (arun@it.uts.edu.au)
+
+# ENVIRONMENT VARIABLE PRIMER FOR REFERENCE
+# $0 script invoked
+# $1, $2, $3 are the command line arguments
+# $# Number of command line arguments 
+# $@ all command line arguments - white space is preserved
+# $* all command line arguments - white space striped 
+
+usage() {
+
+cat <<-EOF 
+Usage: generate-tests-sh [-v [true|false] -fp filepattern]
+Generates test cases
+options:                               
+    -v boolean 
+    -fp test one or many files eg. customer.bon or *cust*
+    -h print usage
+    --help print usage
+Examples
+    $ ./generate-tests-sh
+    $ ./generate-tests-sh -fp customer*
+EOF
+exit 0
+
+}
+
+# functions for better reuse
+headerMsg() {
+
+cat >> $1 <<-EOF 
+##############################
+# AUTO GENERATED $1
+# DO NOT EDIT!!
+# execute generate-tests-sh
+##############################
+
+EOF
+
+}
+
+setTestEnvironment() {
+cat >> $1 <<-EOF
+TESTS_ENVIRONMENT = \$(SHELL)
+EOF
+}
+
+generateFileList() {
+    echo -n "$2 $3 " >> $1 
+    for FILE in $4; 
+    do 
+	echo -n ${FILE/$5/$6} "" >> $1 
+    done
+
+    echo ""  >> $1 
+
+}
+
+generateOutFiles() {
+    D="---- DIFF check"
+    FILE=$2
+    OUTPATTERN=${FILE/[.]bon/.out}
+    SHELLSCRIPT=${FILE/[.]bon/.sh}
+    LOGFILE=${FILE/[.]bon/.log}
+    
+    for OUTFILE in $(ls -1 $OUTPATTERN 2> /dev/null);
+    do
+        if [ "$3" == true ]
+        then
+cat >> $1 <<EOF
+	@echo "echo $D" >> $SHELLSCRIPT 
+EOF
+        else
+            :
+        fi
+
+cat >> $1 <<EOF
+	@echo "../bondi $2 > $LOGFILE" >> $SHELLSCRIPT
+EOF
+
+
+        if [ "$3" == false ]	
+        then
+
+cat >> $1 <<EOF
+	@echo "diff \
+            -I sourcing \ 
+            -q \
+            $LOGFILE \
+            $OUTFILE \
+            1> /dev/null" \
+            >> $SHELLSCRIPT 
+EOF
+        else
+cat >> $1 <<EOF
+	@echo "diff \
+            -I sourcing \ 
+            $LOGFILE \
+            $OUTFILE" \
+            >> $SHELLSCRIPT 
+EOF
+
+        fi
+    done 
+}
+
+generateDiffs() {
+    D="---- DIFF check"
+    FILE=$2
+
+    if [ "$3" == true ]  
+    then
+    for OUTFILE in `ls -1 ${FILE/[.]bon/.out} 2> /dev/null`;
+    do
+cat >> $1 <<EOF
+	@echo "echo $D" >> ${FILE/[.]bon/.sh}
+	@echo "../bondi $2 > ${FILE/[.]bon/.log}" >> ${FILE/[.]bon/.sh}
+EOF
+
+
+        if [ "$3" == false ]	
+        then
+
+cat >> $1 <<EOF
+	@echo "diff \
+            -I sourcing \ 
+            -q \
+            ${FILE/[.]bon/.log} \
+            ${FILE/[.]bon/.out} \
+            1> /dev/null" \
+            >> ${FILE/[.]bon/.sh}
+EOF
+
+        else
+
+cat >> $1 <<EOF
+	@echo "diff \
+            -I sourcing \ 
+            ${FILE/[.]bon/.log} \
+            ${FILE/[.]bon/.out}" \
+            >> ${FILE/[.]bon/.sh}
+EOF
+
+        fi
+    done 
+    else
+    for OUTFILE in `ls -1 ${FILE/[.]bon/.out} 2> /dev/null`;
+    do
+cat >> $1 <<EOF
+	@echo "../bondi $2 > ${FILE/[.]bon/.log}" >> ${FILE/[.]bon/.sh}
+EOF
+
+
+        if [ "$3" == false ]	
+        then
+
+cat >> $1 <<EOF
+	@echo "diff \
+            -I sourcing \ 
+            -q \
+            ${FILE/[.]bon/.log} \
+            ${FILE/[.]bon/.out} \
+            1> /dev/null" \
+            >> ${FILE/[.]bon/.sh}
+EOF
+
+        else
+
+cat >> $1 <<EOF
+	@echo "diff \
+            -I sourcing \ 
+            ${FILE/[.]bon/.log} \
+            ${FILE/[.]bon/.out}" \
+            >> ${FILE/[.]bon/.sh}
+EOF
+
+        fi
+    done 
+
+    fi
+}
+
+igenerateDiffs() {
+    D="---- DIFF check"
+    FILE=$2
+
+    if [ "$3" == true ]  
+    then
+    for OUTFILE in `ls -1 ${FILE/[.]bon/.out} 2> /dev/null`;
+    do
+cat >> $1 <<EOF
+	@echo "echo $D" >> ${FILE/[.]bon/.sh}
+	@echo "../bondi $2 > ${FILE/[.]bon/.log}" >> ${FILE/[.]bon/.sh}
+EOF
+
+
+        if [ "$3" == false ]	
+        then
+
+cat >> $1 <<EOF
+	@echo "diff \
+            -I sourcing \ 
+            -q \
+            ${FILE/[.]bon/.log} \
+            ${FILE/[.]bon/.out} \
+            1> /dev/null" \
+            >> ${FILE/[.]bon/.sh}
+EOF
+
+        else
+
+cat >> $1 <<EOF
+	@echo "diff \
+            -I sourcing \ 
+            ${FILE/[.]bon/.log} \
+            ${FILE/[.]bon/.out}" \
+            >> ${FILE/[.]bon/.sh}
+EOF
+
+        fi
+    done 
+    else
+    for OUTFILE in `ls -1 ${FILE/[.]bon/.out} 2> /dev/null`;
+    do
+cat >> $1 <<EOF
+	@echo "../bondi $2 > ${FILE/[.]bon/.log}" >> ${FILE/[.]bon/.sh}
+EOF
+
+
+        if [ "$3" == false ]	
+        then
+
+cat >> $1 <<EOF
+	@echo "diff \
+            -I sourcing \ 
+            -q \
+            ${FILE/[.]bon/.log} \
+            ${FILE/[.]bon/.out} \
+            1> /dev/null" \
+            >> ${FILE/[.]bon/.sh}
+EOF
+
+        else
+
+cat >> $1 <<EOF
+	@echo "diff \
+            -I sourcing \ 
+            ${FILE/[.]bon/.log} \
+            ${FILE/[.]bon/.out}" \
+            >> ${FILE/[.]bon/.sh}
+EOF
+
+        fi
+    done 
+
+    fi
+}
+
+generateTestCase() {
+
+    T="Testing "
+    S="---- SYNTAX \& TYPE check"
+
+    if [ "$2" == true ]
+    then
+	for FILE in $3; 
+	do 
+            SHELLSCRIPT=${FILE/[.]bon/.sh}
+	    echo "" >> $1 
+	    echo "$SHELLSCRIPT:" >> $1 
+	    touch $SHELLSCRIPT
+	    chmod 777 $SHELLSCRIPT 
+	    echo "	@echo \"echo \"\"  \" >>" $SHELLSCRIPT >> $1 
+	    echo "	@echo \"echo $T $FILE \":\"  \" >>" $SHELLSCRIPT >> $1 
+	    echo "	@echo \"echo $S \" >>" $SHELLSCRIPT >> $1 
+	    echo "	@echo \"../bondi $FILE 1> /dev/null\" >>" $SHELLSCRIPT >> $1 
+	    #generateDiffs $1 ${FILE} $2
+	    generateOutFiles $1 ${FILE} $2
+	done
+    else
+	for FILE in $3; 
+	do 
+            SHELLSCRIPT=${FILE/[.]bon/.sh}
+	    echo "" >> $1 
+	    echo "$SHELLSCRIPT:" >> $1 
+	    touch $SHELLSCRIPT
+	    chmod 777 $SHELLSCRIPT 
+	    echo "	@echo \"../bondi $FILE 1> /dev/null\" >>" $SHELLSCRIPT >> $1 
+	    #generateDiffs $1 ${FILE} $2
+	    generateOutFiles $1 ${FILE} $2
+	done
+    fi
+}
+
+verbose=false
+filepattern=*.bon
+# process command line arguments
+while [ $# -gt 0 ]
+do
+    case "$1" in
+	-v) verbose="$2"; shift;;
+	-fp) filepattern="$2"; shift;;
+	--help) usage; exit 1;;	
+	-h)     usage; exit 1;;	
+	-*)     usage; exit 1;;
+	*)  break;;	# terminate while loop
+    esac
+    shift
+done
+
+headerMsg Makefile.am
+setTestEnvironment Makefile.am
+generateFileList Makefile.am \
+                 TESTS \
+                 = \
+                 "`ls -1 $filepattern 2> /dev/null`" \
+                 [.]bon \
+                 .sh 
+
+generateFileList Makefile.am \
+                   .PHONY \
+                   : \
+                   "`ls -1 $filepattern 2> /dev/null`" \
+                   [.]bon \
+                   .sh 
+
+generateTestCase Makefile.am \
+                   $verbose \
+                   "`ls -1 $filepattern 2> /dev/null`"
+
+
+cat >> Makefile.am <<EOF
+.PHONY: clean 
+clean:
+	@rm -rf INSTALL COPYING NEWS README AUTHORS ChangeLog
+	@rm -rf *.sh
+	@rm -rf *.log
+	@rm -rf Makefile.in configure config.status config.log
+	@rm -rf aclocal.m4 autom4te.cache
+EOF
+
+touch INSTALL COPYING NEWS README AUTHORS ChangeLog
+autoreconf 2> /dev/null
+automake --add-missing 2> /dev/null
+./configure --silent 2> /dev/null
+

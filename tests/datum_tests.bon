@@ -1,0 +1,158 @@
+(*** datum tests *) 
+
+(* 
+%open "../tests/datum_tests.bon";; 
+*) 
+
+"datum values";;
+
+3;;
+3.3;;
+'a';;
+"a";;
+Un;;
+
+
+(* int_ops_bss *) 
+
+3 plusint 4 eqcons 7;;
+5 minusint 3 eqcons 2;;
+3 timesint 4 eqcons 12;
+9 divideint 4 eqcons 2;;
+7 modint 4 eqcons 3;;
+
+(* int_ops1 *) 
+
+negateint 3 eqcons (-3);;
+
+(*
+randomint 10000;;
+*)
+"float_ops1";;
+
+acos 0.5;;
+asin 0.5;;
+atan 0.5;;
+ceil 0.5;;
+cos 0.5;;
+cosh 0.5;;
+exponential 0.5;;
+fabs 0.5;;
+floor 0.5;;
+log 0.5;;
+log10 0.5;;
+negatefloat 0.5;;
+(*
+randomfloat 0.5;;
+*)
+sin 0.5;;
+sinh 0.5;;
+sqrt 0.5;;
+tan 0.5;;
+tanh 0.5;;
+
+(* float_ops2  
+
+  "atan2";
+  "fmod";
+  "pow"
+*)
+
+(* float_ops_bss *) 
+
+4.4 plusfloat 3.3;;
+4.4 minusfloat 3.3;;
+4.4 timesfloat 3.3;;
+4.4 dividefloat 3.3;;
+4.4 atan2 3.3;;
+4.4 fmod 3.3;;
+4.4 pow 3.3;;
+
+
+(* int_rels *) 
+
+3 lessthanint 4;;
+3 lessthanorequalint 4;;
+5 greaterthanint 4;;
+4 greaterthanorequalint 4;;
+ 
+
+(* float_rels *) 
+
+3.3 lessthanfloat 4.4;;
+3.3 lessthanorequalfloat 4.4;;
+not (3.3 greaterthanfloat 4.4);;
+4.4 greaterthanorequalfloat 4.4;;
+ 
+
+(* char_rels *)  
+
+'a' lessthanchar'b' ;;
+'a' lessthanorequalchar'b' ;;
+'b' greaterthanchar 'a' ;;
+not ('a' greaterthanorequalchar 'b') ;;
+
+(* other ops, mainly string ops *) 
+ 
+int2float 3;;
+truncate 3.3;;
+printchar 'c';;
+printstring "abc";;
+"abc" concat "def";;
+"abc" getcharstring 2;;
+4 makestring 'f';;
+"abbc" indexstring 'b';;
+"abbc" rindexstring 'b';;
+"abbc" containsstring 'b';;
+copystring "abc";;
+escapedstring "abc";;
+lengthstring "abc";;
+uppercasestring "aBc";;
+substring "abcd" 1 3;;
+indexfromstring "abcd" 1 'b' ;;
+containsfromstring "abcd" 1 'b' ;;
+
+(* printing chars and strings  
+	printchar and printstring do not quote.
+	prim2string adds single or double quotes. 
+	the generic print calls prim2string.
+	To display text use printchar and printstring.
+	To discuss text (as data) use print. 	
+		*) 
+
+printchar 'a';;
+printstring (prim2string 'a');;
+prim2string 'a';;
+'a';;
+
+printstring "abc";;
+printstring (prim2string "abc");;
+prim2string "abc";;
+"abc";;
+
+printchar '\n';;
+printchar '\t';;
+printchar 'a';;
+
+
+printstring "At present, newlines and other whitespace" ; 
+printchar '\n' ; 
+printstring "are only accessible as characters."  ; 
+printchar '\n';
+printstring "To change this, modify the lexer for strings." ;
+printchar '\n'
+;;
+
+(* wildcards *) 
+
+_Int;;
+_Float;;
+_Char;;
+_String;;
+
+%show nomatch;;
+
+negateint _Int == (Exception "nomatch");;
+lengthstring _String == (Exception "nomatch");;
+
+%hide nomatch;;

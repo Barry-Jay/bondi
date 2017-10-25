@@ -1,0 +1,17 @@
+
+let serverActions socket =
+    let client = acceptclient socket in
+    close socket;;
+
+let server = openserver (gethost "localhost") 1415;;
+(**
+ * Listen on a seperate thread
+ *)
+spawn(serverActions server);;
+
+
+(**
+ * Connect to the tcp server 
+ *)
+let sock = opentcp (gethost "localhost") 1415 in
+close sock;;

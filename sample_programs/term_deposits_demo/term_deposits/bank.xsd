@@ -1,0 +1,25 @@
+<xs:element name="bank" minOccurs="0" maxOccurs="unbounded">
+<xs:complexType>
+<xs:sequence>
+<xs:element name="name" type="xs:string"/>
+<xs:element name="account"  minOccurs="0" maxOccurs="unbounded">
+<xs:complexType>
+<xs:sequence>
+<xs:element name="accountName" type="xs:string"/>
+<xs:element name="balance" type="xs:float"/>
+</xs:sequence>
+</xs:complexType>
+</xs:element>
+<xs:element name="termDeposit"  minOccurs="0" maxOccurs="unbounded">
+<xs:complexType>
+<xs:sequence>
+<xs:element name="tdName" type="xs:string"/>
+<xs:element name="minDeposit" type="xs:integer"/>
+<xs:element name="period" type="xs:integer"/>
+<xs:element name="rate" type="xs:float"/>
+</xs:sequence>
+</xs:complexType>
+</xs:element>
+</xs:sequence>
+</xs:complexType>
+</xs:element>

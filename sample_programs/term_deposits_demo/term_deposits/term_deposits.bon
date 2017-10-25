@@ -1,0 +1,238 @@
+(*
+
+This example uses bondi version 2.01 (not yet publically available) 
+
+%cd "term_deposits";;
+%open "term_deposits.bon";;
+
+*)
+
+(*
+
+Challenge: to uniformly display term deposit information sourced from  different banks . 
+*)
+
+
+
+
+(* --------NSW banks uses ADTs  ------------  *)
+
+datatype Account1 = Acct1 of String * Float ;;
+                           (* name, balance *) 
+
+datatype TermDeposit1 = 
+   Td1 of String and String and  Int and Float and Int and Bool;;
+          (* bank, product, min deposit, rate, period, gov guarantee *)
+
+
+datatype Bank1 = Bank1 of String * List Account1 * List TermDeposit1
+with toString += | Bank1 (n,_,_) -> n;;
+                         (* name, accounts, term deposits *) 
+
+let acct1 = Acct1 ("Fred", 2222.00);;
+let td1 = (Td1 "NSW" "Standard TD" 1000 4.7 12 True);;
+let nsw = Bank1 ("NSW", [acct1],[td1]);;
+
+
+
+
+(* ------ Vic bank uses OO classes  ------------ *) 
+
+(*
+It happens to have the same type of accounts, but this need not be so.
+Its term deposits have less information (but could have more)
+Its bank structure is different, too (only one term deposit on offer) . 
+
+ *) 
+
+class TermDeposit2 {
+name: String;
+min_dep: Int;
+rate: Float;
+period:Int;
+get_name = { | () -> !this.name} 
+set_name = { fun n -> this.name = n} 
+get_min_dep = { | () -> !this.min_dep} 
+set_min_dep = { fun n -> this.min_dep = n} 
+get_rate = { | () -> !this.rate} 
+set_rate = { fun n -> this.rate = n} 
+get_period = { | () -> !this.period} 
+set_period = { fun n -> this.period = n} 
+(* with toString += | (x:TermDeposit2) -> "{ ... *) 
+}
+
+class Bank2 {
+name: String;
+accts: List Account1 ;
+td: TermDeposit2 ;
+get_name = { | () -> !this.name} 
+set_name = { fun n -> this.name = n} 
+get_accts = { | () -> !this.accts} 
+set_accts = { fun n -> this.accts = n} 
+get_td = { | () -> !this.td} 
+set_td = { fun n -> this.td = n} 
+with
+toString += | (x:Bank2) -> x.get_name()
+}
+
+
+
+
+let td2 = new TermDeposit2;;
+td2.set_name("Vic");
+td2.set_min_dep(2000);
+td2.set_rate(4.6);
+td2.set_period(3);;
+
+let vic = new Bank2 ;;
+vic.set_name("Vic");
+vic.set_accts([acct1]);
+vic.set_td(td2);;
+
+
+(*** -------------  Cloud bank uses XML ---------------*)
+
+(* XML processing  developed by  Jose Vegara Medina, 
+   with help from Thomas Given-Wilson and Arun Kumar *)  
+
+(* locates and loads needed files, --change paths for different directory structures -- *)
+%cd "../containers";;
+%open "containers.bon";;
+%cd "../xml";;
+%open "parser_combinators.bon";;
+%open "xmlparsers.bon";;
+%cd "../term_deposits";;
+
+
+(* generates bank.xsd.bon *)
+parseXmlSchema "bank.xsd";;
+%open "bank.xsd.bon" ;;
+
+(* generates cloud.xml.bon *)
+parseXml xmlPbank "cloud.xml";;
+%open "cloud.xml.bon";;
+
+toString += | Banks [Bank (Name n,_,_)] -> n ;;
+
+
+(* --- An independent web service -------- *)
+
+
+(* some functions *) 
+ 
+let rec (add_spaces: String -> Int -> String) s = 
+| 0 -> s 
+| n -> add_spaces  (s ^ " ")(n-1)
+;;
+
+let padstring s = add_spaces s (9 - (lengthstring s))
+;;
+
+
+
+let term_deposit_display_header =  | () -> 
+  printstring "\n    bank        minimum     rate        period \n -----------------------------------------------\n"
+;;
+
+
+let display_td bank mindeposit rate period = 
+printstring (
+"    " ^ (padstring bank) ^ 
+"    " ^ (padstring (toString mindeposit)) ^ 
+"    " ^ (padstring (toString rate)) ^ 
+"    " ^ (padstring (toString period)) ^
+"\n"
+);;
+
+(* Now allow this to act on anything, not just TDs.  *)
+
+let displayAny_td = 
+  fun (tdc: lin (String -> Int -> Float -> Int ->  a)) -> 
+| {b,m,r,p} tdc b m r p -> display_td b m r p
+| _ -> ()
+;;
+
+
+class TD_service<a,b> {
+dummy:a;
+ont : lin (String -> Int -> Float -> Int -> a) ;
+db : b ;
+get_ont = { | () -> !this.ont }
+set_ont = { fun x -> this.ont = x}
+get_db = { | () -> !this.db }
+set_db = { fun x -> this.db = x}
+display = { | () -> 
+iter (displayAny_td (this.get_ont())) (this.get_db()) }
+display_with_header = { | () -> 
+term_deposit_display_header() ;
+this.display()
+}
+with
+toString += | (x:TD_service<a,b>) -> toString (x.get_db())
+}
+
+let (any_td: a -> Unit) = 
+| (x:TD_service) -> x.display()
+| _ -> () 
+;;
+
+let (all_tds : a -> Unit) links = 
+  term_deposit_display_header() ;
+  iter any_td links
+;;
+
+
+
+(* ----- Interfacing to the service, without refactoring ---------- *) 
+
+
+(*** At NSW *) 
+
+
+lin tdc1 b m r p = Td1 b _ m r p _ ;;
+
+let nsw_TD = new TD_service<TermDeposit1,Bank1>;;
+nsw_TD.set_ont(tdc1);
+nsw_TD.set_db (nsw);;
+
+nsw_TD.display_with_header();;
+
+
+
+(*** At Vic  *) 
+
+let get_td2_data (x:TermDeposit2[a]) = (x.get_name(),x.get_min_dep(),x.get_rate(),x.get_period());;
+
+get_td2_data td2;;
+
+
+lin tdc2  b m r p = view(get_td2_data,(b,m,r,p)) as (_:TermDeposit2);;
+ 
+let vic_TD = new TD_service<TermDeposit2,Bank2>;;
+vic_TD.set_ont(tdc2);
+vic_TD.set_db (vic);;
+
+vic_TD.display_with_header();;
+
+
+
+(*** At Cloud *)
+
+lin tdc3 b m r p = TermDeposit (TdName b,MinDeposit m, Period p,Rate r);;
+
+let cloud_TD = new TD_service<TermDepositT_BankE,Bank_>;;
+cloud_TD.set_ont(tdc3);
+cloud_TD.set_db(cloud) ;;
+
+cloud_TD.display_with_header();;
+
+
+
+(*** -----  Using a search engine  ------ *) 
+
+
+
+let banks = [ (nsw_TD: Top), (vic_TD:Top), (cloud_TD:Top)];;
+	(* produced by some search process *) 
+
+all_tds banks;;

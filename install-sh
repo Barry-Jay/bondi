@@ -1,0 +1,34 @@
+#!/bin/bash
+
+#if [ "$1" = "jocaml" ]
+#then
+#        PATCH="cat Makefile | sed 's/ocaml/jocaml/g' | sed 's/$(unix_o)//g' | sed 's/$(l_unix)//g' >>Makefile.patched && mv Makefile.patched Makefile"
+#else
+#        PATCH="true"
+#fi
+
+cd src 
+./configure --prefix=/usr
+if [ "$?" -eq "0" ]
+then
+        if [ "$1" = "jocaml" ]
+        then
+            echo "PATCHING MAKEFILE TO USE jocaml!!!!!"
+            cat Makefile | sed 's/ocaml/jocaml/g' | sed 's/$(unix_o)//g' | sed 's/$(l_unix)//g' >>Makefile.patched
+            mv Makefile.patched Makefile
+        fi
+	make depend
+	if [ "$?" -eq "0" ]
+	then
+		make all
+		if [ "$?" -ne "0" ]
+		then
+			echo "Error compiling bondi, exiting."
+		fi
+	else
+		echo "Error found while constructing dependencies, exiting."
+	fi
+else
+	echo "Configuration failed, exiting."
+fi
+cd ../

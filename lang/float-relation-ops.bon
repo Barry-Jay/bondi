@@ -1,0 +1,4 @@
+let isgreater       = 1.1 greaterthanfloat    1.05;;
+let isgreaterequal  = 1.5 greaterthanorequalfloat  1.5;;
+let isless          = 2.5 lessthanfloat        2.6;;
+let islessequal     = 3.55 lessthanorequalfloat 3.55;;

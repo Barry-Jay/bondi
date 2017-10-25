@@ -1,0 +1,7 @@
+let rec (fib_aux: Int -> Int * Int -> Int *Int) p = | (m,n) -> 
+if p <= 2
+then (m,n)
+else fib_aux (p-1) (m+n,m)
+;;
+
+let fib p = fst (fib_aux p (1,1)) ;;

@@ -1,0 +1,125 @@
+(* Combinator Parsing functions
+@description Provides higher­order functions that allow grammar construction.
+@author Jose Vergara.
+@since 20 July 2008.
+@version 1.2
+
+%open "parser_combinators.bon";;
+
+*)
+
+
+let escDQ x = if (x== '"') then "\"" else (1 makestring x);;
+
+let (tokenize: String -> List char) p = 
+let rp = Ref p in
+let i = Ref (lengthstring p) in
+let rlength = Ref (lengthstring p) in
+let rlist = Ref (Cons '@' Nil) in
+while (!i  > 0) do (
+   i = !i-1;
+   if (((!rp getcharstring (!i)) != '\\') && ((!rp getcharstring (!i)) != '\013') && ((!rp getcharstring (!i)) != '\t') ) then
+   (
+   if (!i == !rlength-1)  then 
+            (rlist = (Cons (!rp getcharstring (!i)) Nil) )
+            else 
+            (rlist = (Cons (!rp getcharstring (!i)) !rlist))
+	) else ()
+);
+!rlist;;
+
+datatype Reply = Ok of (Top * ContainerList<Char>) | Error ;;
+datatype Consumed = WConsumed of Reply | Empty of Reply;;
+
+type Parser = ContainerList<Char> -> Consumed;;
+
+let (satisfy: (Char -> Bool) -> Parser) p =
+| (xs:ContainerList<Char>) -> 
+     match (xs.next()) with
+     | Some x -> if (p x) then WConsumed (Ok ((x:Top),xs)) else Empty Error
+     | None -> Empty Error
+;;
+
+let ((<|>): Parser -> Parser -> Parser)  p q s = 
+let temp = (!s.data) in
+match p s  with
+  | WConsumed (Ok (x,y)) -> WConsumed (Ok (x,y))
+  | Empty (Ok (x,y)) -> q y
+  | Empty (Error) -> (s.data = temp); q s 
+;;
+
+let ((>>=): Parser -> (a-> Parser) -> Parser) p q s =
+match p s with
+  |Empty (Error) -> Empty (Error)
+  |WConsumed (Ok (x,y)) -> (q x) y
+  |Empty (Ok (x,y)) -> (q x) y
+;;
+
+let ((>>): Parser -> Parser -> Parser) p q s =
+match p s with
+  |Empty (Error) -> Empty (Error)
+  |WConsumed (Ok (x,y)) -> q y
+  |Empty (Ok (x,y)) -> q y
+;;
+
+let except c = satisfy ((!=) c);;
+let spchar c = satisfy ((==) c);;
+let any_char = satisfy (fun n->True);;
+let letter = satisfy (fun c ->(c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z' ));;
+let digit = satisfy  (fun c ->(c >= '0' && c <= '9'));;
+
+let (return: a -> Parser ) val s =
+WConsumed (Ok(val,s));;
+
+
+let makeStr x = (1 makestring x);;(* (cleanFile ((!xmlterms_filename)^".xml.bon")); *)
+
+let rec (many: (ContainerList<Char> -> Consumed) -> ContainerList<Char> -> Consumed ) p  =
+( p  >>= (fun x -> ((many p) <|> return ([]:Top)) >>= 
+( | [] -> return [x]
+  | (Cons _ _) as xs -> return (Cons x xs)
+  | _ -> Exception "not a list in function many"
+)
+)
+) <|> return ([]:Top);;
+
+let oneOrMany p = p >>= (fun x ->  (many p) >>= 
+( | [] -> return [x]
+  | (Cons _ _) as xs -> return (Cons x xs)
+  | _ -> Exception "not a list in function many"
+)
+);;
+
+let maybe p = (p <|> return []);;
+
+let returnStr parser = parser >>= (
+| [] -> return (foldright (^) [] "")
+| (Cons _ _) as xs -> return (foldright (^) (map escDQ xs ) "")
+  | _ -> Exception "not a list in function maybe"
+
+);;
+
+let rec (get_ValueParser: (List Parser) -> Parser) =(* (cleanFile ((!xmlterms_filename)^".xml.bon")); *)
+| Cons x Nil -> (x >>= (fun x -> return (Cons x Nil)))
+| Cons x y -> (x >>= (fun p -> (get_ValueParser y) >>= 
+(
+| [] -> return []
+| (Cons _ _) as xs -> return (Cons x xs ) 
+| _ -> Exception "not a list in function get_ValueParser"
+)))
+;;
+
+let rec (get_Parser: (List Parser) -> Parser) =
+| Cons x Nil -> x
+| Cons x y -> x >> (get_Parser y)
+;;
+
+let rec (get_choiceParser: (List Parser) -> Parser) =
+| Cons x Nil -> x
+| Cons x y -> (x <|> (get_choiceParser y))
+;;
+
+let getParserVreturnStr_str text=  returnStr (get_ValueParser(map spchar (tokenize text)));;
+let getParser_str text=   get_Parser(map spchar (tokenize text));;
+
+let getChoiceParser_str text=   get_choiceParser(map spchar (tokenize text));;

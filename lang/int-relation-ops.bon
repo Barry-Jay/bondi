@@ -1,0 +1,4 @@
+let isgreater       = 2 greaterthanint     1;;
+let isgreaterequal  = 1 greaterthanorequalint  1;;
+let isless          = 1 lessthanint        10;;
+let islessequal     = 2 lessthanorequalint 2;;

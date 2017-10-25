@@ -1,0 +1,15 @@
+<bank>
+<name>Cloud</name>
+<account>
+  <accountName>Qin</accountName>
+  <balance>3333.00</balance>
+</account>
+<termDeposit>
+  <tdName>Cloud</tdName>
+  <minDeposit>500</minDeposit>
+  <period>1</period>
+  <rate>3.25</rate>
+</termDeposit>
+</bank>
+
+

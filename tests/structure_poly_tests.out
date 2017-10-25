@@ -1,0 +1,83 @@
+(* Begin sourcing "/usr/lib/bondi/prelude/standard_prelude.bon"... *)
+(* Begin sourcing "/usr/lib/bondi/prelude/printing.bon"... *)
+^: String -> String -> String
+toString: a -> String
+print: a -> Unit
+println: a -> Unit
+(* Finished sourcing "/usr/lib/bondi/prelude/printing.bon" *)
+(* Begin sourcing "/usr/lib/bondi/prelude/imperatives_core.bon"... *)
+forall: Int -> Int -> (Int -> a) -> Unit
+iter: (all a.a -> Unit) -> b -> Unit
+clone: a -> a
+(* Finished sourcing "/usr/lib/bondi/prelude/imperatives_core.bon" *)
+(* Begin sourcing "/usr/lib/bondi/prelude/structure_poly.bon"... *)
+Pair: a -> b -> a * b
+fromTuple: a -> String
+it: Unit
+fst: a * b -> a
+snd: a * b -> b
+Inl: a -> a + b
+Inr: b -> a + b
+Evr: a -> Konstant a b
+Ths: a -> Identity a
+ParamPair: a b -> c b -> ParamProduct a c b
+Ok: a b -> Okay a b
+Nest: a (b c) -> Nested a b c
+Tag: (a -> b) -> a c -> Represent a b c
+deconstruct: a b -> (all c.Represent c a b -> d) -> d
+reconstruct: Represent a b c -> b c
+map: (a -> b) -> c a -> c b
+Nil: List a
+Cons: a -> List a -> List a
+toString: b -> String
+toString: c -> String
+Some: a -> Maybe a
+None: Maybe a
+foldleft: (a -> b -> a) -> a -> c b -> a
+foldright: (a -> b -> b) -> c a -> b -> b
+zipwith: (a * b -> c) -> d a * e b -> d c
+(* Finished sourcing "/usr/lib/bondi/prelude/structure_poly.bon" *)
+(* Begin sourcing "/usr/lib/bondi/prelude/datum2generic.bon"... *)
+&&: Bool -> Bool -> Bool
+not: Bool -> Bool
+||: Bool -> Bool -> Bool
+equal: a * b -> Bool
+==: a -> a -> Bool
+!=: a -> a -> Bool
+plus: a * b -> a
++: a -> a -> a
+shortplus: a * b -> a
+minus: a * b -> a
+-: a -> a -> a
+times: a * b -> a
+*: a -> a -> a
+divide: a * b -> a
+/: a -> a -> a
+negate: a -> a
+lessthan: a * b -> Bool
+<: a -> a -> Bool
+lessthanorequal: a * b -> Bool
+<=: a -> a -> Bool
+greaterthan: a * b -> Bool
+>: a -> a -> Bool
+greaterthanorequal: a * b -> Bool
+>=: a -> a -> Bool
+(* Finished sourcing "/usr/lib/bondi/prelude/datum2generic.bon" *)
+(* Begin sourcing "/usr/lib/bondi/prelude/dynamic2static.bon"... *)
+dynamic_case_for_internal_use_only = ...
+(* Finished sourcing "/usr/lib/bondi/prelude/dynamic2static.bon" *)
+(* Begin sourcing "/usr/lib/bondi/prelude/queries.bon"... *)
+apply2all: (all a.a -> a) -> b -> b
+append: List a -> List a -> List a
+some_append: Maybe a -> List a -> List a
+select: (all a.a -> Maybe b) -> c -> List b
+is: lin a -> b -> Maybe a
+(* Finished sourcing "/usr/lib/bondi/prelude/queries.bon" *)
+(* Finished sourcing "/usr/lib/bondi/prelude/standard_prelude.bon" *)
+(* Begin sourcing "./structure_poly_tests.bon"... *)
+plusOne: Int -> Int
+mapList: (a -> b) -> List a -> List b
+it: Bool
+it = True
+it: (a -> b) -> c a -> c b
+(* Finished sourcing "./structure_poly_tests.bon" *)

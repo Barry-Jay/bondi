@@ -1,0 +1,10 @@
+let readFile file =
+  let f = openfile file in
+  let contents = readall f in
+  close f;
+  printstring "opened: " ^ file ^ "\n";
+  contents;;
+
+readFile "../TODO";;
+
+

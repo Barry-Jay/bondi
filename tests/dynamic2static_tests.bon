@@ -1,0 +1,14 @@
+
+
+
+(|{} Pair -> True) Pair == True;;
+(|{x}x->x) 3 == 3;;
+(|{x,y}x y->x y) (Pair 3) 4 == (3,4);;
+let elim = fun (x: lin (a -> b)) -> |{y} x y -> y;;
+elim Pair (Pair 3) == 3;;
+let d_equal = fun (x: lin a) -> (|{} x  -> True | _ -> False);;
+d_equal 4 4 == True;;
+d_equal 4 5 == False;;
+
+
+(| {x} (Ref (Pair x)) -> x) (Ref (Pair 1)) == 1;;

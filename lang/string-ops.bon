@@ -1,0 +1,35 @@
+(**
+ * String Operations
+ *)
+
+let bondi  = "Bon" concat "di";;
+let capstr = capitalizestring "apple";;
+
+(* second parameter is a from index *)
+let contains = containsfromstring "abcdefghijklmnopqstuvwxyz" 0 'r';;
+
+let yesitdoes = "agk" containsstring 'k';;
+
+let copyme = copystring "VW";;
+
+let stringwithcarriagereturn = escapedstring "first line\rsecond line";;
+
+let onepoint7 = float2string 1.7;;
+
+let mychar = "speedy" getcharstring 1;;
+
+let kposition = indexfromstring "abcdefghijklmnopqrstuvwxyz" 0 'k';;
+
+let getindex = "abcdefghijkl" indexstring 'f';;
+
+let seven = int2string 7;;
+
+let strlength = lengthstring "12345";;
+
+let astring = 1 makestring 'A';;
+
+let getrindex = "abcdefghijkl" rindexstring 'f';;
+
+let surname = substring "Barry Jay" 6 3;;
+
+let ucase = uppercasestring "string";;

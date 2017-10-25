@@ -1,0 +1,18 @@
+let sock = opentcp (gethost "feeds.smh.com.au") 80;;
+let msg  = "GET /rssheadlines/world.xml HTTP/1.0\nHost: feeds.smh.com.au
+\n\n";;
+
+write msg sock;;
+
+let xml_head = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r";;
+
+let rec get_xml_feed start sock =
+  let ln = readline sock in
+  if (equal (start,ln))
+  then readall sock
+  else get_xml_feed start sock
+;;
+
+let feed = get_xml_feed xml_head sock;;
+
+close sock;;

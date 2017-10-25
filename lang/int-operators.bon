@@ -1,0 +1,8 @@
+30  divideint 2;;
+30  minusint 2;;
+40  modint 40;;
+negateint 1;;
+20  plusint 1;;
+randomint 100;;
+20  timesint 50;;
+
