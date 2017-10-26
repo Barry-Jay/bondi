@@ -354,11 +354,11 @@ let eval_datum d = function
                               |   Unix.WEXITED i 
                               |   Unix.WSIGNALED i
                               |   Unix.WSTOPPED i -> Int i)
-	  | "copystring"	 -> String (String.copy s)
+	  | "copystring"	 -> String s
 	  | "escapedstring" -> String (String.escaped s)
           | "lengthstring" -> Int (String.length s)
-	  | "capitalizestring" -> String (String.capitalize s)
-	  | "uppercasestring" -> String (String.uppercase s)
+	  | "capitalizestring" -> String (String.capitalize_ascii s)
+	  | "uppercasestring" -> String (String.uppercase_ascii s)
           | "string2bool"  -> Bool (bool_of_string s)
           | "string2int"   -> Int (int_of_string s)
           | "string2float" -> Float (float_of_string s)
