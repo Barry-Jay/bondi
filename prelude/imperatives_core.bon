@@ -1,0 +1,24 @@
+
+let forall lo hi proc = 
+  if hi lessthanint lo then () else 
+  let i = Ref lo in 
+  while (!i lessthanorequalint hi) do (proc !i; i = !i plusint 1)
+;;
+
+let ext (iter: (all a. a->Unit) -> b -> Unit) f z = 
+f z; 
+(	| Ref (Ref z) -> () 
+        | Ref x -> iter f x
+	| x y -> (iter f x); (iter f y)
+	| y as _array -> forall 0 ((lengthv y) minusint 1) (fun i -> iter f (entry(y,i)))
+	| y -> ()) z
+;;
+
+let ext (clone: a -> a) = 
+(* shallow cloning, that stops at the first reference *) 
+
+| Ref x -> Ref x
+| x y -> (clone x) (clone y) 
+| x -> x
+;;
+

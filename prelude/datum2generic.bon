@@ -1,0 +1,215 @@
+(*** generic versions of datum operations and relations *) 
+
+(* 
+%open "../prelude/datum2generic.bon" ;;
+*)
+
+(*** boolean ops, equality  *)
+
+let (&&) x y = if x then y else False;;
+let not x = if x then False else True;;
+let (||) x y = if x then True else y ;;
+
+let ext (equal : a * b -> Bool) = 
+| (x1 x2,y1 y2) -> equal (x1,y1) && (equal(x2,y2)) 
+| (x as _array,y as _array) -> 
+	let n = lengthv x in 
+	if  (lengthv y) eqcons n
+	then 	
+	let res = Ref True in 
+	forall 0 (n minusint 1) (fun i -> res = !res && equal(!(entry(x,i)),!(entry(y,i))));
+	!res
+	else False
+| (x,y) -> x eqcons y 
+;;
+
+
+(*
+let dynamic_equal = fun x -->  | {} x -> True | y -> False;;
+*)
+let (==) (x:a) (y:a) = equal(x,y);;
+let (!=) x y = not (x == y);;
+
+
+(*** arithmetic *) 
+
+let ext (plus : a * b -> a) = 
+| ((x:Int),(y:Int)) -> x plusint y
+| ((x:Float),(y:Float)) -> x plusfloat y
+| (x as _array,y as _array) -> 
+	let n = lengthv x in 
+	if  (lengthv y) eqcons n
+	then 	
+	let res = newarray !(entry(x,0)) n in 
+	forall 0 (n minusint 1) (fun i -> entry(res,i) = (plus(!(entry(x,i)),!(entry(y,i)))));
+	res
+	else Exception "plus" 
+| (x1 x2,y1 y2) -> plus (x1,y1) (plus(x2,y2)) 
+| (x,y) -> if x eqcons y  then x else Exception "plus" 
+;;
+
+let ((+): a -> a -> a) x y = plus(x,y);;
+
+let ext (shortplus : a * b -> a) = 
+| ((x:Int),(y:Int)) -> x plusint y
+| ((x:Float),(y:Float)) -> x plusfloat y
+| (x1 x2,y1 y2) -> shortplus (x1,y1) (shortplus(x2,y2)) 
+| (x,y) -> x
+;;
+
+
+let ext (minus : a * b -> a) = 
+| ((x:Int),(y:Int)) -> x minusint y
+| ((x:Float),(y:Float)) -> x minusfloat y
+| (x as _array,y as _array) -> 
+	let n = lengthv x in 
+	if  (lengthv y) eqcons n
+	then 	
+	let res = newarray !(entry(x,0)) n in 
+	forall 0 (n minusint 1) (fun i -> entry(res,i) = (minus(!(entry(x,i)),!(entry(y,i)))));
+	res
+	else Exception "minus" 
+| (x1 x2,y1 y2) -> minus (x1,y1) (minus(x2,y2)) 
+| (x,y) -> if x eqcons y then x else Exception "minus" 
+;;
+
+let ((-): a -> a -> a) x y = minus(x,y);;
+
+
+let ext (times : a * b -> a) = 
+| ((x:Int),(y:Int)) -> x timesint y
+| ((x:Float),(y:Float)) -> x timesfloat y
+| (x as _array,y as _array) -> 
+	let n = lengthv x in 
+	if  (lengthv y) eqcons n
+	then 	
+	let res = newarray !(entry(x,0)) n in 
+	forall 0 (n minusint 1) (fun i -> entry(res,i) = (times(!(entry(x,i)),!(entry(y,i)))));
+	res
+	else Exception "times" 
+| (x1 x2,y1 y2) -> times (x1,y1) (times(x2,y2)) 
+| (x,y) -> if x eqcons y then x else Exception "times" 
+;;
+
+let (( * ): a -> a -> a) x y = times(x,y);;
+
+let ext (divide : a * b -> a) = 
+| ((x:Int),(y:Int)) -> x divideint y
+| ((x:Float),(y:Float)) -> x dividefloat y
+| (x as _array,y as _array) -> 
+	let n = lengthv x in 
+	if  (lengthv y) eqcons n
+	then 	
+	let res = newarray !(entry(x,0)) n in 
+	forall 0 (n minusint 1) (fun i -> entry(res,i) = (divide(!(entry(x,i)),!(entry(y,i)))));
+	res
+	else Exception "divide" 
+| (x1 x2,y1 y2) -> divide (x1,y1) (divide(x2,y2)) 
+| (x,y) -> if x eqcons y then x else Exception "divide" 
+;;
+
+let ((/): a -> a -> a) x y = divide(x,y);;
+
+let ext (negate : a -> a) = 
+    | (x:Int) -> negateint x
+    | (x:Float) -> negatefloat x
+    | x as _array -> 
+	let n = lengthv x in 
+	let res = newarray !(entry(x,0)) n in 
+	forall 0 (n minusint 1) (fun i -> entry(res,i) = (negate(!(entry(x,i)))));
+	res
+    | c x -> (negate c) (negate x)
+    | x -> x 
+;;
+
+(* the notation -3 is handled in the parser *) 
+
+
+
+
+(* relations *) 
+
+let ext (lessthan : a * b -> Bool) = 
+| ((x:Int),(y:Int)) -> x lessthanint y
+| ((x:Float),(y:Float)) -> x lessthanfloat y
+| ((x:Char),(y:Char)) -> x lessthanchar y
+| (x as _array,y as _array) -> 
+	let n = lengthv x in 
+	if  (lengthv y) eqcons n
+	then 	
+	let res = Ref True in 
+	forall 0 (n minusint 1) (fun i -> res = !res && lessthan(!(entry(x,i)),!(entry(y,i))));
+	!res
+	else Exception "lessthan" 
+| (x1 x2,y1 y2) -> lessthan (x1,y1) && (lessthan(x2,y2)) 
+| (x1 x2,y) -> False
+| (x,y) -> x eqcons y
+;;
+
+let ((<): a -> a -> Bool) x y = lessthan(x,y);;
+
+let ext (lessthanorequal : a * b -> Bool) = 
+| ((x:Int),(y:Int)) -> x lessthanorequalint y
+| ((x:Float),(y:Float)) -> x lessthanorequalfloat y
+| ((x:Char),(y:Char)) -> x lessthanorequalchar y
+| (x as _array,y as _array) -> 
+	let n = lengthv x in 
+	if  (lengthv y) eqcons n
+	then 	
+	let res = Ref True in 
+	forall 0 (n minusint 1) (fun i -> res = !res && lessthanorequal(!(entry(x,i)),!(entry(y,i))));
+	!res
+	else Exception "lessthanorequal" 
+| (x1 x2,y1 y2) -> lessthanorequal (x1,y1) && (lessthanorequal(x2,y2)) 
+| (x1 x2,y) -> False
+| (x,y) -> x eqcons y
+;;
+
+let ((<=): a -> a -> Bool) x y = lessthanorequal(x,y);;
+
+let ext (greaterthan : a * b -> Bool) = 
+| ((x:Int),(y:Int)) -> x greaterthanint y
+| ((x:Float),(y:Float)) -> x greaterthanfloat y
+| ((x:Char),(y:Char)) -> x greaterthanchar y
+| (x as _array,y as _array) -> 
+	let n = lengthv x in 
+	if  (lengthv y) eqcons n
+	then 	
+	let res = Ref True in 
+	forall 0 (n minusint 1) (fun i -> res = !res && greaterthan(!(entry(x,i)),!(entry(y,i))));
+	!res
+	else Exception "greaterthan" 
+| (x1 x2,y1 y2) -> greaterthan (x1,y1) && (greaterthan(x2,y2)) 
+| (x,y) ->  x eqcons y
+;;
+
+let ((>): a -> a -> Bool) x y = greaterthan(x,y);;
+
+let ext (greaterthanorequal : a * b -> Bool) = 
+| ((x:Int),(y:Int)) -> x greaterthanorequalint y
+| ((x:Float),(y:Float)) -> x greaterthanorequalfloat y
+| ((x:Char),(y:Char)) -> x greaterthanorequalchar y
+| (x as _array,y as _array) -> 
+	let n = lengthv x in 
+	if  (lengthv y) eqcons n
+	then 	
+	let res = Ref True in 
+	forall 0 (n minusint 1) (fun i -> res = !res && greaterthanorequal(!(entry(x,i)),!(entry(y,i))));
+	!res
+	else Exception "greaterthanorequal" 
+| (x1 x2,y1 y2) -> greaterthanorequal (x1,y1) && (greaterthanorequal(x2,y2)) 
+| (x,y) -> x eqcons y
+;;
+
+let ((>=): a -> a -> Bool) x y = greaterthanorequal(x,y);;
+
+
+(*** other datum ops 
+
+acos asin atan ceil cos cosh expt fabs floor 
+log log10 sin sinh sqrt tan tanh atan2 fmod 
+pow int2float modint truncate 
+
+*)
+
+

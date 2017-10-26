@@ -1,0 +1,48 @@
+(* generic queries, etc *) 
+
+(*
+%open "../prelude/queries.bon";; 
+*)
+
+(* apply2all is a generalisaion of updating *)
+
+let ext (apply2all : (all a. a -> a) -> b -> b) f  z = f ((
+  | Ref (Ref _) as y -> y  
+  | Ref x as y -> y  =  apply2all f x; y
+  | x y -> (apply2all f x) (apply2all f y) 
+  | x as _array -> let y = newarray !(entry(x,0)) (lengthv x) in 
+	           (forall 0 ((lengthv x) minusint 1) (fun i -> entry(y,i) = apply2all f !(entry(x,i)))) ;
+	           y
+  | x -> x)
+z)
+;;
+
+
+(* selecting *) 
+
+let ext (append: List a -> List a -> List a) = 
+| Nil -> fun y -> y 
+| Cons x xs -> fun y -> Cons x (append xs y) 
+;;
+
+let (some_append: Maybe a -> List a -> List a) = 
+ | Some x -> Cons x
+ | None -> fun xs -> xs
+;;
+
+
+let ext (select: (all a . a -> Maybe b) -> c -> List b) =  fun f -> 
+	| Ref (Ref _) -> [] 
+	| Ref z -> select f z 
+	| z y -> some_append (f (z y)) (append (select f z) (select f y))
+        | x as _array -> 
+	   let res = Ref (some_append (f x) []) in 
+	   forall 0 ((lengthv x) minusint 1) (fun i -> res = append (select f !(entry(x,i))) !res);
+	           !res
+	| y -> some_append (f y) [] 
+;;
+
+
+let is = fun (x: lin a) ->  ((| {y} y as x -> Some y | _ -> None): b -> Maybe a)
+;;
+

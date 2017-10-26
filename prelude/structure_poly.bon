@@ -1,0 +1,131 @@
+(* structure polymorphism *) 
+
+
+(* 
+%open "../prelude/structure_poly.bon";;
+*)
+
+(*** types expected by the compiler  *)
+
+
+datatype Binprod x y  = Pair of x and y
+;;
+
+let rec (fromTuple: a -> String) =
+  | (x,y) -> (toString x) ^ "," ^ (fromTuple y)
+  | x -> toString x
+;;
+
+toString += |  (x,y) -> "(" ^ (fromTuple (x,y)) ^ ")";;
+
+let fst = | (x,y) -> x;;
+let snd = | (x,y) -> y;;
+
+datatype Bincoprod x y  = Inl  of x | Inr of y
+;;
+
+
+datatype Konstant a b = Evr of a ;;
+datatype Identity a = Ths of a ;;
+datatype ParamProduct f g a = ParamPair of f a and g a ;; 
+datatype Okay f a = Ok of f a ;;
+datatype Nested g f a = Nest of g (f a);;
+datatype Represent a b c = Tag of a -> b and a c ;;
+
+
+let ext (deconstruct : b c -> (all a. (Represent a b c -> d)) -> d) = 
+	(* this is an existential type exists a. Represent a b c *) 
+	fun x -> Exception;;
+
+let ext (reconstruct : Represent a b c -> b c) = fun x -> Exception;; 
+
+
+let ext (map : (a -> b) -> c a -> c b) = 
+let rec (map0: (a -> b) -> c a -> c b) f = 
+| Evr x -> Evr x 
+| Ths x -> Ths (f x) 
+| Ok x -> Ok (map f x) 
+| ParamPair x y -> ParamPair (map0 f x) (map0 f y)
+| Nest x -> Nest (map (map f) x)
+| Tag n x -> Tag n (map0 f x)
+in 
+fun f x ->  deconstruct x (fun y -> reconstruct ((map0 f) y))
+;;
+
+datatype List a = Nil  | Cons of a and List a 
+with toString += | Nil ->  "[]" 
+ and toString += | Cons x y -> 
+let rec (toStringEntries: List a -> String) = 
+
+| Nil -> ""
+| Cons x Nil -> toString x
+| Cons x xs -> (toString x) ^ "," ^ (toStringEntries xs)
+| _ -> "_"
+in 
+"[" ^ (toStringEntries (Cons x y)) ^ "]"
+;;
+
+
+(* [1,2,3] : list int is supported *)
+
+(* The option/maybe datatype *)
+datatype Maybe a = Some of a | None;;
+
+
+let ext (foldleft : (a -> b -> a) -> a -> c b -> a) = 
+let rec (foldleft0: (a -> b -> a) -> a -> c b -> a) f z = 
+| Evr x -> z 
+| Ths x -> f z x  
+| Ok x -> foldleft f z x
+| ParamPair x y -> foldleft0 f (foldleft0 f z x) y 
+| Nest x -> foldleft (foldleft f) z x 
+| Tag n x -> foldleft0 f z x 
+in 
+fun f z x -> deconstruct x (foldleft0 f z)
+;;
+
+(* 
+foldleft (+) 0 [1,2,3];;
+*) 
+
+let ext (foldright : (a -> b -> b) -> c a -> b -> b) = 
+let rec (foldright0: (a -> b -> b) -> c a -> b -> b) f = 
+| Evr x -> fun z -> z
+| Ths x -> f x
+| Ok x -> foldright f x
+| ParamPair x y -> fun z -> foldright0 f x (foldright0 f y z) 
+| Nest x -> foldright (foldright f) x 
+| Tag n x -> foldright0 f x 
+in 
+fun f x z -> deconstruct x (foldright0 f) z
+;;
+
+
+(* 
+foldright (+) [1,2,3] 0;;
+*) 
+
+
+
+let ext (zipwith: (a * b -> c) -> d a * e b -> d c) = 
+let rec (zipwith0: (a * b -> c) -> d a * e b -> d c) f = 
+| (Evr x,_) -> Evr x 
+| (Ths x,Ths y) -> Ths (f(x,y))
+| (Ok x,Ok y) -> Ok(zipwith f (x,y))
+| (ParamPair x1 x2, ParamPair y1 y2) -> 
+	ParamPair (zipwith0 f (x1,y1)) (zipwith0 f (x2,y2))
+| (Nest x,Nest y) -> Nest (zipwith (zipwith f) (x,y)) 
+| (Tag m x, Tag n y) -> Tag m (zipwith0 f (x,y)) 
+in 
+fun f -> | (x,y) -> 
+	deconstruct x (fun x1 -> 
+	deconstruct y (fun y1 ->  (reconstruct (zipwith0 f (x1,y1)))
+))
+;;
+
+(* 
+zipwith plus ([1,2,3], [4,5,6]);;
+*) 
+
+
+

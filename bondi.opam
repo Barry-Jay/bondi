@@ -1,0 +1,14 @@
+opam-version: "1.2"
+version: "2.09"
+maintainer: "barry.jay@uts.edu.au"
+authors: ["Barry Jay" "Jose Vergara"]
+homepage: "https://github.com/Barry-Jay/bondi"
+bug-reports: "https://github.com/Barry-Jay/bondi/issues"
+dev-repo: "https://github.com/Barry-Jay/bondi.git"
+license: "Apache-2.0"
+build: [
+ ["make"]
+]
+depends: [
+  "jbuilder"                {build & >= "1.0+beta12"}
+]

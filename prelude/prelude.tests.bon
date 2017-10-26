@@ -1,0 +1,16 @@
+(* 
+This file contains some types and terms expected by the compiler, and
+refers to some example files that illustrate basic examples of
+parametric, path, pattern and sub-type polymorphism.
+
+%open "standard_prelude.bon" ;;
+
+*)
+
+%open "prelude/printing.bon";;         (* basic printing *) 
+%open "prelude/char_op_syntax.bon";;  (* some repair work *) 
+%open "prelude/imperatives_core.bon";; (* for-loops  and iterators *) 
+%open "prelude/structure_poly.bon";;   (* structure polymorphism *) 
+%open "prelude/datum2generic.bon" ;;   (* path polymorphism *) 
+%open "prelude/queries.bon";;          (* pattern polymorphism *) 
+

@@ -1,0 +1,127 @@
+(***
+
+%open "dynamic2static.bon";;
+
+This contains most of the machinery necessary for the compiler to
+convert dynamic patterns to static patterns using the function
+dynamic_case. It has no type as it involves explicit substitutions.
+
+Its first parameter is a function wildstring for determining the
+nature of wildcards. This is not currently supported in the source
+language, but is represented internally by Twildstring (and evaluated
+to Vwildstring).
+
+Its second parameter is a function unk from integers to iterms that is
+used to produce the unknowns manipulated during dynamic matching. This
+is instantiated internally by  Tconstructor (nextvar(),0) 
+
+The mechanics of the algorithm are pretty much what one migh expect. 
+
+It may be possible to tidy thing up further, but now the emphasis is
+to get this into the standard prelude. 
+
+*)
+
+%hide types ;;
+
+
+let dynamic_case_for_internal_use_only wildstring unk n p1 s1 u = 
+(* p1 and s1 have been abstracted wrt the bound symbols. *) 
+
+let rec (match_merge: List (a*b) -> List (a*b) -> List (a*b)) =
+| [] -> (| sigma2 -> sigma2 )
+| (Cons (b1,x1) rest1) as sigma1 -> (
+  | [] -> sigma1 
+  | (Cons (b2,x2) rest2) as sigma2 -> 
+       if b2>b1
+       then Cons (b1,x1) (match_merge rest1 sigma2)
+       else if b2 == b1 
+       	    then if x2 == x1 
+	    	 then Cons (b1,x1) (match_merge rest1 rest2)
+		 else (Exception "nomatch")
+	    else Cons (b2,x2) (match_merge sigma1 rest2)
+  | _ -> (Exception "nomatch")
+  )
+| _ -> | _ -> (Exception "nomatch")
+
+in
+
+let (wildmatch: String *a -> Bool) = 
+| ("",_) -> True
+| ("tame",_) -> False
+| ("Int",_Int) -> True
+| ("Float",_Float) -> True
+| ("Char",_Char) -> True
+| ("String",_String)  -> True
+| ("ref",_ref)  -> True
+| ("array",_array)  -> True
+
+in
+
+let rec (basic_match: (all d.d -> String) -> a -> a -> b -> c -> List (Top * Top)) 
+   wildstring lo hi p u = 
+if lessthanorequal(lo,p) && lessthan(p,hi)  
+then [(p,u)] 
+else 
+if wildmatch (wildstring p,u)
+then []
+else 
+match (p,u) with 
+| (p1 p2,u1 u2) -> match_merge (basic_match wildstring lo hi p1 u1) 
+                               (basic_match wildstring lo hi p2 u2)
+| (Ref p2,Ref u2) -> basic_match wildstring lo hi p2 u2
+| (_,_) -> if equal (p,u) then []  else Exception "nomatch"
+ 
+in 
+
+let rec length = 
+| Cons _ xs -> length xs + 1
+| [] -> 0
+| _ -> -1
+
+in 
+
+let (sub2args: List (a*b) -> Int -> List b) xs n = 
+  if length xs == n 
+  then map snd xs 
+  else Exception "nomatch" 
+
+in
+
+let solve wildstring unk n p u = 
+(* unk is a function for producing unknowns to be instantiated within the compiler. 
+   If successful, it produces a list of values for the unknowns. 
+	Now some auxiliary functions *) 
+
+sub2args (basic_match wildstring (unk 0) (unk n) p u) n
+
+in
+let rec name_unknown unk q i = 
+    if i<=0 
+    then q
+    else  name_unknown unk q (i-1) (unk (i-1))
+
+in
+match solve wildstring unk n (name_unknown unk p1 n) u with 
+| Exception "nomatch" -> Exception "dynamic_case_inner"
+| us -> foldleft (fun x -> fun y -> x y) s1 us 
+;;
+
+
+%show types;;
+
+
+(* tests 
+
+
+(|{} Pair -> True) Pair == True;;
+(|{x}x->x) 3 == 3;;
+(|{x,y}x y->x y) (Pair 3) 4 == (3,4);;
+let elim = fun (x: lin (a -> b)) -> |{y} x y -> y;;
+elim Pair (Pair 3) == 3;;
+let d_equal = fun (x: lin a) -> (|{} x  -> True | _ -> False);;
+d_equal 4 4 == True;;
+d_equal 4 5 == False;;
+
+
+*)

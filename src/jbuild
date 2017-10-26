@@ -1,0 +1,7 @@
+(jbuild_version 1)
+
+(executable
+ ((name bondi)
+  (public_name bondi)
+  (libraries (unix threads))
+))
