@@ -1,0 +1,20 @@
+
+(*
+%open "prelude/printing.bon";;
+*)
+
+
+let (^) x y  = x concat y ;; 
+
+let ext (toString: a ->  String) = 
+  | Ref _ -> "..."
+  | x (y z) -> (toString x) ^ " (" ^ (toString (y z)) ^ ")" 
+  | x y ->  (toString x) ^ " " ^ (toString y) 
+  | x -> prim2string x
+;;
+
+let (print: a -> Unit) x = printstring (toString x)
+;;
+
+let (println: a -> Unit) x = printlnstring (toString x)
+;;

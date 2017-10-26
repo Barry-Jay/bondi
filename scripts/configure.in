@@ -1,4 +1,0 @@
-AC_INIT([Bondi Tests], 1.0, [Barry.Jay@uts.edu.au])
-AM_INIT_AUTOMAKE
-AC_CONFIG_FILES(Makefile)
-AC_OUTPUT

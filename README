@@ -98,14 +98,3 @@ TESTING
       If all .out files are validated this test acts like a regression test. 
 
 
-===================================================================
-
-The only change is that the subversion repository for the private/development copy is
-
-  https://subvert.it.uts.edu.au/bondi/bondi-2.0
-
-that is, check out with:
-
-   svn checkout https://subvert.it.uts.edu.au/bondi/bondi-2.0
-
-

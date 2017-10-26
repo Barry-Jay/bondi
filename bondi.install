@@ -1,0 +1,11 @@
+lib: [
+  "_build/install/default/lib/bondi/META" {"META"}
+  "_build/install/default/lib/bondi/opam" {"opam"}
+]
+bin: [
+  "_build/install/default/bin/bondi" {"bondi"}
+]
+doc: [
+  "_build/install/default/doc/bondi/README"
+  "_build/install/default/doc/bondi/LICENSE"
+]
