@@ -1,6 +1,5 @@
-open List  
+open List
 open Format
-open Random
 
 module OrderedStrings  = 
   struct 
@@ -29,7 +28,7 @@ type datum_value =
    * read and write to a server socket - but the behaviour is unspecified and may generate exceptions,
    * do so as your own risk! *)
   | Host       of Unix.host_entry
-  | Un                                
+  | Un
 ;;
 
 
@@ -63,9 +62,9 @@ let string_of_datum_value = function
   | String s -> "\"" ^ s ^ "\""
   | Bool true  -> "True" 
   | Bool false -> "False" 
-  | Socket (s, i, o, d) -> "Socket:" ^ d
-  | Host c -> "Host"
-  | Un          -> "Unit"        
+  | Socket (* (s, i, o, d) *) (_, _, _, d) -> "Socket:" ^ d
+  | Host (* c *) _ -> "Host"
+  | Un -> "Unit"
 ;;
  
 let int_ops_bss = [
@@ -425,7 +424,8 @@ let eval_datum d = function
 	  | _ -> basicError (d^" is an unknown Host and Int operator")
 	
 	)
-	| [Socket (s, i, (o,f), desc)] -> (
+    (* [Socket (s, i, (o,f), desc)] *)
+	| [Socket (s, i, (_,f), _)] -> (
 	  match d with 
           | "readline" ->  if f
                                     then String(input_line i)
@@ -433,7 +433,7 @@ let eval_datum d = function
 	  | "readall" -> if f
                                     then String(read i)
                                     else String("")
-          | "acceptclient" ->  let (clientSock,caller) = Unix.accept s in
+          | "acceptclient" ->  let (clientSock, (* caller *) _) = Unix.accept s in
                                 let clientIn  = Unix.in_channel_of_descr clientSock
                                 and clientOut = Unix.out_channel_of_descr clientSock in
                                 Socket (clientSock,clientIn,(clientOut,true),"Serving client")
@@ -441,8 +441,8 @@ let eval_datum d = function
 				Un
 	  | _ -> basicError (d^" is an unknown Socket operator")
 	
-	)
-	| [String m; Socket (s, i, (o,f), desc)] -> (
+	)           (* Socket (s, i, (o,f), desc) *)
+	| [String m; Socket (_, _, (o,f), _)] -> (
 	  match d with 
 	  | "write" -> if f
                                   then (output_string o m; flush o);
@@ -453,7 +453,7 @@ let eval_datum d = function
 	  | _ -> basicError (d^" is an unknown String and Socket operator")
 	
 	)
-  	  | args -> printf "%s is an unknown operator" d; basicError (d^" has unsuitable arguments") 
+  	  | (* args *) _ -> printf "%s is an unknown operator" d; basicError (d^" has unsuitable arguments") 
 ;;	
 
 let prec_op = function
@@ -463,8 +463,8 @@ let prec_op = function
 	  | "minusint" 
 	  | "negatint" 
 	  | "randomint"
-          | "int2string"
-          | "float2string"
+    | "int2string"
+    | "float2string"
 	  | "plusfloat" 
 	  | "minusfloat" 
 	  | "negatefloat" 
@@ -497,7 +497,7 @@ let prec_op = function
 	  | "divfloat"  -> 8
 
 
-	  | str -> 6
+	  | (* str *) _ -> 6
 
 (* Create a table for all the operators *)
 let oper_table = 

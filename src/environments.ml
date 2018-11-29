@@ -127,7 +127,7 @@ let fvar str = TyV(TyVar str,0)
 let cvar str = TyC(TyVar str,0)
 let apF g f = ApplyF(g,f)
 let apF2 h g f = apF (apF h g) f 
-let pairF ty1 ty2 = apF2 (cvar "PairF") ty1 ty2
+(* let pairF ty1 ty2 = apF2 (cvar "PairF") ty1 ty2 *)
 let funty ty1 ty2 = Funty(ty1,ty2)
 let funty2 ty1 ty2 ty3 = funty ty1 (funty ty2 ty3)
 let comm = cvar "Unit"
@@ -148,18 +148,18 @@ let rec isValue = function (* for the value restriction upon polymorphism *)
   | Tconstructor  (Var "Ref",_)
   | Twildcard "ref" 
   | Twildcard "array" -> false
-  | Tvar _ 
-  | Tnextvar                      
+  | Tvar _
+  | Tnextvar
   | Tsuper _
-  | Twildcard _ 
-  | Twildstring   _   
-  | Tconstructor _ 
+  | Twildcard _
+  | Twildstring
+  | Tconstructor _
   | Datum _
-  | Lam _ 
-  | Case _ 
-  | Choice _ 
-  | Addcase _ -> true 
-  |  _ -> false 
+  | Lam _
+  | Case _
+  | Choice _
+  | Addcase _ -> true
+  |  _ -> false
 
 
 (*** environments *) 
@@ -201,11 +201,11 @@ let globalRefVarSub = ref (TyMap.empty: sub)
 
 let envFind n tv env = 
   try get_best n (TMap.find tv !env)
-  with Wrong_index p -> termVarError tv "has a bad index" 
+  with Wrong_index (* p *) _ -> termVarError tv "has a bad index" 
 
 let envFindFull n tv env = 
   try get_best n (TMap.find tv !env)
-  with Wrong_index p -> termVarError tv "has a bad index" 
+  with Wrong_index (* p *) _ -> termVarError tv "has a bad index" 
 
 let envAdd tv n t env  = 
   let ts = 
@@ -236,7 +236,7 @@ and applySub tySub =
 	  try TyMap.find tyv tySub
           with Not_found -> TyV (tyv,n)
         end
-    | TyC (tyv,n) as ty -> ty 
+    | TyC (* (tyv,n) *) _ as ty -> ty 
     | ApplyF(g,f) -> ApplyF(appS g, appS f)
     | ChoiceF(g,f) -> ChoiceF(appS g, appS f)
     | SuperF(g,f) -> SuperF(appS g, appS f)
@@ -289,7 +289,7 @@ let rec freeTyVars sub =
   let rec freeV  = function
   | TyV (tv,_) when TyMap.mem tv sub -> freeV (TyMap.find tv sub)
   | TyV (tv,_) -> [tv]
-  | TyC (tv,n) -> []
+  | TyC (* (tv,n) *) _ -> []
   | ApplyF (g,f) 
   | ChoiceF (g,f) 
   | SuperF (g,f) 
@@ -351,9 +351,6 @@ let get_declaration_counter() =
   !declaration_counter;;
 
 let classTyString = "_cty";;
-(* 
-let classStringOfClassTyString str = String.sub str 0  (String.length str - 4);;
-*)
 
 let rec type_of_class (str,n) zs rest = 
   let tyv = TyVar (str^classTyString) in 
@@ -792,7 +789,7 @@ pf" the sub is:\n";
 
 let format_datum d = ps (string_of_datum_value d)
 
-let rec format_term_variable = function
+let format_term_variable = function
   | Var y -> ps y
   | Mvar n  -> ps ("mvar_" ^(string_of_int n))
 ;;
@@ -926,40 +923,13 @@ let rec do_format t' left_prec right_prec =
       ps "generalise ";
       format_term_variable x 
 
-  | Tlet (status,x,t1,t2) ->  (* print the status!! *) 
+  | Tlet ((* status *) _,x,t1,t2) ->  (* print the status!! *) 
       ps "let ";
-      format_term_variable  x;
+      format_term_variable x;
       ps " = "; 
       do_format t1 0 0;
       ps " in ";
       do_format t2 0 right_prec;
-      
- (* delete 
- | Tletrec (x,t1,t2) ->
-      ps "letrec ";
-      format_term_variable  x;
-      ps " = "; 
-      do_format t1 0 0;
-      ps " in ";
-      do_format t2 0 right_prec;
-      
-  | Tletext (x,t1,t2) ->
-      ps "letext ";
-      format_term_variable  x;
-      ps " = "; 
-      do_format t1 0 0;
-      ps " in ";
-      do_format t2 0 right_prec;
-      
-  | Tletdiscontinuous (x,t1,t2) ->
-      ps "letdiscontinuous ";
-      format_term_variable  x;
-      ps " = "; 
-      do_format t1 0 0;
-      ps " in ";
-      do_format t2 0 right_prec;
-      *)
-
   | TnewArr (t,n) -> 
       ps "newArray ";
       do_format t 0 0;
@@ -988,8 +958,6 @@ let format_term t =
   close_box(); 
   print_flush()
 ;;
-
-
 
 (* formatting values *)
 
@@ -1198,6 +1166,7 @@ match restore_class ty with
     | Array ty -> freeTyVars idSub ty 
     | Quant(x,ty) -> list_remove x (freeRefTyVars ty)
 
+(* ??? is this ok? *)
 and handle_args rvs = function
   | (argtys,k) -> 
       if k<=0 

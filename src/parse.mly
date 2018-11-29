@@ -35,13 +35,15 @@ let make_letmethod (x,ps,r) t = Plet(Method,x,multilam ps r,t)
 
 let make_letdiscontinuous (x,ps,r) t = Plet(Discontinuous,x,multilam ps r,t)
 
+(*
 let make_nested_new bindings body = 
   let bind (x,ps,r) t = 
     if ps = [] 
     then Papply(Plam(x,t),r)
     else pTermError [x] "is a location holding a function" 
   in 
-  fold_right bind bindings body 
+  fold_right bind bindings body
+*)
 
 let tuple xs = 
   let f x y = ap2 (Pconstructor "Pair") y x  in 

@@ -6,6 +6,6 @@ bin: [
   "_build/install/default/bin/bondi" {"bondi"}
 ]
 doc: [
-  "_build/install/default/doc/bondi/README"
   "_build/install/default/doc/bondi/LICENSE"
+  "_build/install/default/doc/bondi/README.md"
 ]

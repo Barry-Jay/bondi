@@ -8,7 +8,6 @@
 open Lexing
 open Parsing
 open Datum
-open P_data
 open Parse
 
 
@@ -134,7 +133,7 @@ let is_rel_op s =
   s.[0] != ':' &&
   test (String.length s - 1)
 
-let rec symbol s =
+let symbol s =
   try Hashtbl.find symbol_table s
   with Not_found ->
     if is_rel_op s then RELOP s else

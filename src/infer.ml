@@ -1,5 +1,4 @@
 open List
-open Format
 open Datum
 open P_data
 open Environments
@@ -100,7 +99,7 @@ let rec unify_p cpc fixed precision sub ty0 ty1 =
 
 	  (* ty2 is a variable *) 
 
-    | (TyV(x,_), TyV(y,_)) when  ty2 = ty3 ->  sub 
+    | (TyV _, TyV _) when  ty2 = ty3 ->  sub 
 
 	  (* handling problems with fixed variables *) 
 
@@ -117,12 +116,12 @@ let rec unify_p cpc fixed precision sub ty0 ty1 =
 	     map X to F Y (respectively, P -> Y) for some fresh Y. 
 	     Otherwise default to Exact unification *)
  
-    | TyV (x,_), ApplyF(_,TyV(y,_)) -> addSubCheck sub x ty3
+    | TyV (x,_), ApplyF(_,TyV(_,_)) -> addSubCheck sub x ty3
     | TyV (x,_), ApplyF(g1,f1) -> 
 	let ty = TyV(nextTypeVar(),0) in 
 	let sub1 = addSubCheck sub x (ApplyF(g1,ty)) in 
 	unify_p cpc fixed precision sub1 ty f1 
-    | TyV (x,_), Funty(_,TyV(y,_)) -> addSubCheck sub x ty3
+    | TyV (x,_), Funty(_,TyV _) -> addSubCheck sub x ty3
     | TyV (x,_), Funty(g1,f1) -> 
 	let ty = TyV(nextTypeVar(),0) in 
 	let sub1 = addSubCheck sub x (Funty(g1,ty)) in 
@@ -131,7 +130,7 @@ let rec unify_p cpc fixed precision sub ty0 ty1 =
 
 	  (* structured types *)
 
-    | TyC _, TyC _ when ty2 = ty3 -> sub 
+    | TyC _, TyC _ when ty2 = ty3 -> sub
     | ApplyF(g0,f0), ApplyF(g1,f1)
     | Funty(g0,f0), Funty(g1,f1) -> 
 	unify_p cpc fixed precision 
@@ -142,7 +141,7 @@ let rec unify_p cpc fixed precision sub ty0 ty1 =
     | SuperF(g0,f0), SuperF(g1,f1) when precision = Exact -> 
 	unify_p cpc fixed Exact 
 	  (unify_p cpc fixed Exact sub g0 g1) f0 f1
-    | SuperF(g0,f0), _ when precision = LessThan -> unify_p cpc fixed LessThan sub f0 ty3
+    | SuperF((* g0 *) _,f0), _ when precision = LessThan -> unify_p cpc fixed LessThan sub f0 ty3
     | (Linty f1,Linty f2) -> unify_p cpc fixed Exact sub f1 f2
     | (Linty f1,_) when cpc -> unify_p cpc fixed precision sub f1 ty3
     | (Ref f1, Ref f2) 
@@ -158,9 +157,9 @@ let rec unify_p cpc fixed precision sub ty0 ty1 =
 
       (* The usual versions of unification *) 
 
-let rec unify fixed sub ty0 ty1 = unify_p false fixed Exact sub ty0 ty1 
+let unify fixed sub ty0 ty1 = unify_p false fixed Exact sub ty0 ty1 
  
-let rec subunify fixed sub ty0 ty1 = unify_p false fixed LessThan sub ty0 ty1 
+let subunify fixed sub ty0 ty1 = unify_p false fixed LessThan sub ty0 ty1 
 
 (*> CPC *)
 
@@ -339,7 +338,7 @@ let specialises sEnv sub delta aty rty mty =
 ;;
 
 
-let rec invoke_ty_by_matching sEnv sub uty mty  = 
+let invoke_ty_by_matching sEnv sub uty mty  = 
   (* produces a substitution and a result type, 
      to which the substitution must be applied.
      It will not modify uty 
@@ -408,7 +407,7 @@ let rec invoke_ty sEnv sub uty mty  =
  
 (* constructors and datum constants appear in both linear terms  and terms *) 
 
-let infer_constructor_with_delta x sEnv fixed sub0 expectedTy =
+let infer_constructor_with_delta x (* sEnv *) _ fixed sub0 expectedTy =
   let (n,(sch,status)) = 
     try envFind 0 (Var x) globalCEnv
     with Not_found -> termError [Tconstructor (Var x,0)] "is not recognised"
@@ -421,7 +420,7 @@ let infer_constructor_with_delta x sEnv fixed sub0 expectedTy =
 let infer_constructor x sEnv fixed sub0 expectedTy =
   fst (infer_constructor_with_delta x sEnv fixed sub0 expectedTy) 
 
-let infer_datum d sEnv fixed sub0 expectedTy = 
+let infer_datum d (* sEnv *) _ fixed sub0 expectedTy = 
   (subunify fixed sub0 (cvar (datum_type_string d)) expectedTy,Datum d)
 
 
@@ -472,7 +471,7 @@ let rec inf_linear p (sEnv: scheme_env) fixed tyEnv theta sub pty_opt status =
 
 
   | Pconstructor x -> 
-      let ((sub1,c),(delta1,status1)) = infer_constructor_with_delta x sEnv [] sub pty 
+      let ((sub1,c),(delta1, _)) = infer_constructor_with_delta x sEnv [] sub pty 
       in 
       (sub1,c,delta1,tyEnv,pty)
 
@@ -530,7 +529,7 @@ let rec inf_linear p (sEnv: scheme_env) fixed tyEnv theta sub pty_opt status =
       let fixed1 = append delta0 fixed in 
       let qty = TyV (nextTypeVar(),0) in
       let (sub1,t1) = inf t sEnv fixed1 sub  (funty pty qty) in 
-      let (sub2,q2,delta2,tyEnv2,pty2) = 
+      let (sub2,q2,delta2,tyEnv2,_) = 
       	inf_linear q sEnv fixed TMap.empty theta sub1  (Some qty) status 
       in 
       (sub2,Oper("view",[t1;q2]),delta2,tyEnv2, pty)
@@ -637,9 +636,9 @@ and inf_linear_or_var p (sEnv: scheme_env) fixed tyEnv theta sub pty_opt status 
 	  let tyEnv1 = TMap.add x1 (pty,status) tyEnv  in 
 	  (sub,Tvar(x1,0),delta0,tyEnv1,pty)
       else 
-	let (n,(ty,status1)) = 
+	let (n,(ty, (* status1 *) _)) =
 	  try (0,TMap.find x1 sEnv) 
-	  with Not_found -> 
+	  with Not_found ->
 	    try 
 	      match envFind 0 x1 globalVEnv with 
 		(n,(_,(status2,sch,hasRefVar))) -> 
@@ -718,7 +717,7 @@ and infer_var x sEnv fixed sub0 expectedTy =
     with Not_found ->
       try 
 	match envFind 0 x globalVEnv with 
-	  (_,(_,(Method,sch1,_)))  -> termError [Tvar (x,0)] "is an attribute"
+	  (_,(_,(Method, (* sch1 *) _,_)))  -> termError [Tvar (x,0)] "is an attribute"
 	| (n,(_,(_,sch1,hasRefVar))) -> 
 	    if hasRefVar 
 	    then (applySub !globalRefVarSub sch1,Tvar(x,n))
@@ -730,7 +729,7 @@ and infer_var x sEnv fixed sub0 expectedTy =
   in 
   (sub2,symbol)
   
-and infer_wild str sEnv fixed sub0 expectedTy = 
+and infer_wild str (* sEnv *) _ fixed sub0 expectedTy = 
  let wild = Twildcard str in 
 
     match str with 
@@ -864,16 +863,16 @@ and infer_oper d args sEnv fixed sub0 expectedTy =
     else basicError (d^" has too few arguments") 
   else basicError (d^" is an unknown operator") 
 
-and infer_op_args sEnv fixed (sub) d = 
-  let aux arg (sub,args,argtys) = 
-    match argtys with 
-      argty :: argtys1 -> 
-	let (sub1,arg1) = inf arg sEnv fixed sub (cvar argty) 
-	in 
+and infer_op_args sEnv fixed (* sub *) _ d =
+  let aux arg (sub,args,argtys) =
+    match argtys with
+      argty :: argtys1 ->
+	let (sub1,arg1) = inf arg sEnv fixed sub (cvar argty)
+	in
 	(sub1,arg1 :: args,argtys1)
-    | _ -> basicError (d^" has too many arguments") 
-  in 
-  fold_right aux 
+    | _ -> basicError (d^" has too many arguments")
+  in
+  fold_right aux
 
 
 
@@ -1031,7 +1030,7 @@ So, I plan to remove the pty_opt from everywhere, first by making it always None
 	      (sub,Some (applySub sub ty))
 	  | None -> (sub0,Some uty) 
 	in 
-	let (sub2,p1,delta1,tyEnv1,pty) = 
+	let (sub2,p1, (* delta1 *) _,tyEnv1,pty) = 
 	  inf_linear_or_var p sEnv fixed TMap.empty theta sub1 ty_opt1 Simple in 
 
 	let sEnv1 = TMap.fold TMap.add tyEnv1 sEnv in 
@@ -1344,7 +1343,7 @@ and infer_add_case x case sEnv fixed sub0 expectedTy =
   (sub2,Addcase(x,case2,ty_opt))
 
 and infer_sub_case x sEnv fixed sub0 expectedTy = 
-  let (sch,status) = 
+  let ( (* sch *) _,status) = 
    try TMap.find x sEnv
     with Not_found ->
       try 
@@ -1521,7 +1520,7 @@ and infer_typed t1 ty sEnv fixed sub0 expectedTy =
   let sub1 = subunify fixed sub0 ty1 expectedTy in 
   inf t1 sEnv fixed sub1 ty1 
 
-and infer_new str args sEnv fixed sub0 expectedTy = 
+and infer_new str args (* sEnv *) _ fixed sub0 expectedTy =
   let n = !declaration_counter in 
   let class_ty = type_of_class (str,n) (map convert_type args) (TyC(TyVar "Unit",0)) in 
   let sub1 = subunify fixed sub0 class_ty expectedTy in 
@@ -1566,7 +1565,7 @@ and infer_invoke t x super sEnv fixed sub0 expectedTy =
   in 	
   (sub3,Apply(x1,t1))
 
-
+(*
 and infer_field sEnv fixed (sub,u) expectedTy = 
   match u with 
   | Ptvar x when TMap.mem (Var x) sEnv -> 
@@ -1600,7 +1599,7 @@ and infer_field sEnv fixed (sub,u) expectedTy =
       (sub3,Apply(x1,t1))
 
   | _ -> pTermError [u] "is not a field"
-
+*)
 
 (*> CPC *)
 (* Infer each process seperately. *)

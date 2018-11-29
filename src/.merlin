@@ -1,5 +1,7 @@
-B ../_build/default/src
-FLG -w -40
-PKG threads
-PKG threads.posix
-PKG unix
+B /Users/alberto.vergara/.opam/4.05.0/lib/ocaml
+B /Users/alberto.vergara/.opam/4.05.0/lib/ocaml/threads
+B ../_build/default/src/.bondi.eobjs
+S /Users/alberto.vergara/.opam/4.05.0/lib/ocaml
+S /Users/alberto.vergara/.opam/4.05.0/lib/ocaml/threads
+S .
+FLG -w @a-4-29-40-41-42-44-45-48-58-59-60-40 -strict-sequence -strict-formats -short-paths -keep-locs

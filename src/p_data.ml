@@ -8,21 +8,21 @@ open Datum
 
 type identifier = string
 type tyVar = 
-    TyVar of string   
-  | MTypeVar of int   
+    TyVar of string
+  | MTypeVar of int
 type p_type =
   | PtyV of tyVar 
   | Pconstant of string
-  | PapplyF of p_type * p_type       
-  | Pfunty of p_type * p_type 
+  | PapplyF of p_type * p_type
+  | Pfunty of p_type * p_type
   | Plinty of p_type 
   | Pquant of tyVar * p_type 
   | Pnestedclass of string * p_type list * p_type (* for DNode <a> [b] *) 
-  | Pref of p_type 
-  | Parr of p_type 
+  | Pref of p_type
+  | Parr of p_type
 type p_term =
-  | Ptvar of identifier 
-  | Pwildcard of string 
+  | Ptvar of identifier
+  | Pwildcard of string
     (* the empty string represents a true wildcard,
        "Int" etc are for datum wildcards. 
        Anything else could appear here, and must be handled downstream *) 
@@ -163,6 +163,7 @@ let get_mode s =
   with Not_found -> basicError "unrecognised mode"
 ;;
 
+(*
 let parse_modes s0 =
   let s = s0 ^ " " in
   let l = String.length s in
@@ -181,7 +182,7 @@ let parse_modes s0 =
   parse 0;
   if !badly_formed then print_endline "Warning: badly formed mode list";
   ()
-
+*)
 
 
 
@@ -269,11 +270,13 @@ let incrStringCounter ctr minc maxc = (* for incrementing term and type variable
     newCtr
 ;;
 
-let rec format_identifier bound str = 
+(*
+let format_identifier bound str = 
   if List.mem str bound 
   then ps "'";
   ps str 
 ;;
+*)
 
 let string_of_tyvar = 
   function 
@@ -333,15 +336,14 @@ let p_peek_type pty msg =
   print_flush()
 ;;
 
-
-
 (*** term formatting *) 
 
+(*
 let rec format_identifiers = function 
     [] -> ()
   | [x] -> ps x 
   | x:: xs -> ps x; ps ","; format_identifiers xs
-   
+*)
 
 let rec format_p_term = function
 
@@ -378,7 +380,7 @@ let rec format_p_term = function
 *)
 	 
    | Pcases cases -> 
-       let rec format_case (xs_opt,p,_,s) = 
+       let format_case (xs_opt,p,_,s) = 
 	 match xs_opt with 
 	   None -> 
 	     format_p_term p;
@@ -403,7 +405,7 @@ let rec format_p_term = function
    | Psubcase x ->
      ps ("generalise" ^ x)
 
-   | Plet (status,x,t1,t2) ->
+   | Plet ( (* status *) _,x,t1,t2) ->
        ps "let <status> ";
        format_p_term x;
        ps " = "; 
@@ -411,31 +413,6 @@ let rec format_p_term = function
        ps " in ";
        format_p_term t2;
 
-(* delete ?
-   | Pletrec (x,t1,t2) ->
-       ps "let rec ";
-       format_p_term x;
-       ps " = "; 
-       format_p_term t1;
-       ps " in ";
-       format_p_term t2;
-       
-   | Pletext (x,t1,t2) ->
-       ps "let ext ";
-       format_p_term x;
-       ps " = "; 
-       format_p_term t1;
-       ps " in ";
-       format_p_term t2;
-
-   | Pletmethod (x,t1,t2) ->
-       ps "let method ";
-       format_p_term x;
-       ps " = "; 
-       format_p_term t1;
-       ps " in ";
-       format_p_term t2;
-*)
    | Ptyped (t'',ty) ->
        lpn();
        format_p_term t'' ;
@@ -494,15 +471,13 @@ and p_peeks ts str = List.iter (fun x -> p_peek x str) ts
 
 
 let formatPTermError (ts,s) = 
-
   ps ("term error: ");
- 
   let form_in_box t =
     try 
       format_p_term t;
     with _ -> pf "cannot format term error"
   in
-
+  
   match ts with
     [t] ->
       form_in_box t;

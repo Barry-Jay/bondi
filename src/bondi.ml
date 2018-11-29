@@ -2,18 +2,11 @@
 (* type of user commands in shell *)
 
 open Printf
-open Lexing
-open Parsing
 open List
 open Datum
 open P_data
 open Environments
-open Infer
-open Declare 
-open Eval
-open Parse
-open Lex
-open System
+open Declare
 
 
 (*** initialising bondi environments *)
@@ -178,11 +171,6 @@ let std_lexer_func get_line (s:string) (maxfill:int)  =
     toCopy 
 ;;
 
-let line_from_channel (chan:in_channel) =
-  try ((input_line chan) ^ "\n")
-  with _ -> ""
-;;
-
 let input_channel_line chan () = input_line chan;;
 
 let parseShellListFromChannel chan =
@@ -325,7 +313,7 @@ let readEvalPrint () =
 
 
 
-let rec general_load name =
+let general_load name =
   let save_line_number = !Lex.line_number and save_modes = !modes in
   try
     Lex.line_number := 1;

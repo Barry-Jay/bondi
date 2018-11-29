@@ -4,11 +4,6 @@ open Datum
 open P_data
 open Environments
 open Infer
-open Parse
-open Infer
-(*
-open Odbc
-*)
 
 
 (*** stores *) 
@@ -23,17 +18,17 @@ let ref_store = add2store (Vconstructor (Var "Ref",0))
 let printString = function
 | Vdatum (String s) -> Printf.printf "%s" s;flush stdout
 | Vwildcard "void" -> Printf.printf "..." ;flush stdout
-| t -> basicError "expected a string"  
+| (* t *) _ -> basicError "expected a string"  
 
 let printLineString = function
 | Vdatum (String s) -> Printf.printf "%s\n" s;flush stdout
 | Vwildcard "void" -> Printf.printf "...\n" ;flush stdout
-| t -> basicError "expected a string"
+| (* t *) _ -> basicError "expected a string"
 
 let printChar = function
 | Vdatum (Char c) -> Printf.printf "%c" c ;flush stdout 
 | Vwildcard "void" -> Printf.printf "..." ;flush stdout
-| t -> basicError "expected a character"  
+| (* t *) _ -> basicError "expected a character"  
 
 (*** evaluation *)
 
@@ -50,7 +45,7 @@ let pqlock,pqunlock = new_lock ();;
 (*< CPC *)
 
 let rec patval vEnv = function
-    Tvar (x,n) -> Vvar x
+    Tvar (x, (* n *) _) -> Vvar x
   | Twildcard str -> Vwildcard  str
   | Tconstructor (x,n) -> Vconstructor(x,n)
   | Datum d -> Vdatum d
@@ -138,30 +133,30 @@ and get_datum vEnv t =
 and pToString x = 
   let str = 
     match x with 
-    | Vconstructor (Var x,n) -> x
+    | Vconstructor (Var x, (* n *) _) -> x
     | Vdatum x -> string_of_datum_value x
     | Vwildcard str -> "_"^str
-    | t -> "..." 
+    | (* t *) _ -> "..." 
   in
   Vdatum (String str)
 
 and evalIsRef vEnv t1 =
 let x1 = eval (vEnv,t1) in 
   match x1 with 
-  | Vref x -> Vdatum (Bool true)
+  | Vref _ -> Vdatum (Bool true)
   | _ -> Vdatum (Bool false)
 
 and evalIsArray vEnv t1 =
 let x1 = eval (vEnv,t1) in 
   match x1 with 
-  | Varray x -> Vdatum (Bool true)
+  | Varray _ -> Vdatum (Bool true)
   | _ -> Vdatum (Bool false)
 
 
 and evalSeq vEnv t1 t2  = 
   let x1 = eval (vEnv,t1) in 
   match x1 with 
-  | Vapply(Vconstructor(Var "Exception",0),x3) -> x1
+  | Vapply(Vconstructor(Var "Exception",0), (* x3 *) _) -> x1
   | _ -> eval (vEnv,t2)
 
 and evalAssign = function
@@ -191,7 +186,7 @@ and eval_oper vEnv d args =
   try Vdatum (eval_datum d (map (get_datum vEnv) args))
   with 
     Error "void" -> Vapply(Vconstructor (Var "Exception",0),Vdatum (String "void"))
-  | Error str -> 
+  | Error (* str *) _ -> 
       if get_mode "nomatch" = Show_on 
       then nomatch_location 
       else basicError "a datum operation was mis-applied, perhaps to a wildcard" 
@@ -383,7 +378,7 @@ and eval_choice vEnv t1 t2 =
   in 
   Vchoice(x1,x2)
 
-and eval_add_case vEnv x case ty_opt =
+and eval_add_case vEnv x case (* ty_opt *) _ =
   let newcase = eval (vEnv,case) in
   let oldcaseref =
   try
@@ -505,13 +500,14 @@ and eval_process_case pEnv pcase =
 let rec communicable = function
   | Tname(P_data.Variable,_,_,ty) -> (true,ty)
   | Tcname(P_data.Variable,_,_,ty) -> (true,ty)
-  | Tdname(P_data.Variable,Datum(d),ty) -> (true,ty)
+  | Tdname(P_data.Variable,Datum((* d *) _ ),ty) -> (true,ty)
   | Tpapp(l,r,ty) ->
       begin
         match communicable l with
         | (false,_) -> (false,ty)
-        | (true,funcTy) -> let (ok,argTy) = communicable r in
-                           (ok,ty)
+        | (true, (* funcTy *) _) -> let (ok, (* argTy *) _) = 
+           communicable r in
+           (ok,ty)
       end
   | _ -> (false,TyV(nextTypeVar(),0))
 ;;

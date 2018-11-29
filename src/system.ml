@@ -10,8 +10,3 @@ let standard_library =
     Sys.getenv "BONDILIB"
   with Not_found ->
     standard_library_default
-
-let architecture = "x86_64"
-let model        = "unknown"
-let system       = "linux-gnu"
-;;

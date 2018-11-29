@@ -1,0 +1,8 @@
+(ocamllex lex)
+(ocamlyacc parse)
+
+(executable
+ (name bondi)
+ (public_name bondi)
+ (libraries unix threads)
+)

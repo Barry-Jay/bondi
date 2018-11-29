@@ -16,11 +16,11 @@ open Eval
 
 let rec field_tyvars = function (* ignoring fields of function type *) 
   | TyV (tv,_) -> [tv]
-  | TyC (tv,n) -> []
+  | TyC _ (* (tv,n) *) -> []
   | ApplyF (g,f)  -> append (field_tyvars g) (field_tyvars f) 
-  | ChoiceF (g,f) 
-  | SuperF (g,f) 
-  | Funty (g,f) -> [] 
+  | ChoiceF _ (* (g,f) *)
+  | SuperF  _ (* (g,f) *)
+  | Funty _ (* (g,f) *) -> [] 
   | Linty ty
   | Ref ty 
   | Array ty -> field_tyvars ty 
@@ -41,11 +41,13 @@ let format_parsed_term identifier term =
   flush stdout ;
   print_newline()
 
+(*
 let format_inferred_term term = 
   ps "Inferred term : ";
   print_newline();
   format_term term;
   print_newline()
+*)
 
 let format_declaration str ty = 
   if get_mode "types" = Show_on
@@ -64,11 +66,10 @@ let rec doprint = function
   | TyC(TyVar "Unit",_) 
   | ApplyF(TyC(TyVar "Array",_),_) -> false 
   | Linty ty -> doprint ty 
-  | ty -> true
+  | (* ty *) _ -> true
 ;;
 
-
-let format_declared_value ty x v =   
+let format_declared_value ty x v =
   if doprint ty
   then 
     begin
@@ -225,7 +226,7 @@ let rec pattern_constructors
   | _ -> TVarSet.empty 
 ;;
 
-let add_case_function constructors (x,(theta,p,ty_opt,s)) = 
+let add_case_function constructors (x,((* theta *) _,p,ty_opt,s)) = 
 
   let cs = pattern_constructors p 
   in 
@@ -326,7 +327,7 @@ fold_right (fun x ty -> Quant(x,ty)) paramvars fty
 (*** representations for structure polymorphism  *)
 
 
-let rec extract pty fr0 = 
+let extract pty fr0 = 
 let fr = convert_type fr0 in
   match pty with 
     PtyV x -> 
@@ -526,7 +527,7 @@ let declare_class cl_str zeds super_opt (fds,mds) add_cases =
     if root_class 
     then 
       match class_info with 
-	Class(None,local_pat,local_new,k) -> Class(None,local_pat,local_new,0)
+	Class(None,local_pat,local_new, (* k *) _) -> Class(None,local_pat,local_new,0)
       | _ -> class_info
     else class_info
   in 
