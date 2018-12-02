@@ -88,7 +88,7 @@ let rec path_name name = function
 
 (* let isatty = Config.isatty;; *)
 let isatty () = Unix.isatty Unix.stdin;;
-let buffer = ref "";;
+let buffer = ref Bytes.empty;;
 let action_text = "sourcing"
 
 
@@ -136,9 +136,9 @@ let set_stdin_number_mode (value:bool) =
 ;;
 *)
 
-let std_lexer_func get_line (s:string) (maxfill:int)  =
+let std_lexer_func get_line (s:bytes) (maxfill:int)  =
   begin (* prime the buffer *)
-    if !buffer = "" then begin
+    if !buffer = Bytes.empty then begin
       if !prompt_switch then begin
         if !number_switch 
         then print_string (" " ^ (string_of_int !line_number));
@@ -148,25 +148,25 @@ let std_lexer_func get_line (s:string) (maxfill:int)  =
 
       begin
         try 
-          buffer := (get_line() ^ "\n"); 
+          buffer := (Bytes.of_string (get_line() ^ "\n")); 
           incr line_number
-        with  _ ->  buffer := ""
+        with  _ ->  buffer := Bytes.empty
       end;
       
       if !number_switch && not !prompt_switch  (* CHANGED & TO && !!!! *)
       then print_string ((string_of_int !line_number) ^ ": ");
       
       if !echo_switch then begin
-        print_string !buffer; 
+        print_bytes !buffer; 
         flush stdout
       end
     end
   end;
 
-  let buffer_length = String.length !buffer in
+  let buffer_length = Bytes.length !buffer in
   let toCopy = min maxfill buffer_length in
-    String.blit !buffer 0 s 0 toCopy; (* blit the head across *) 
-    buffer := String.sub !buffer toCopy (buffer_length - toCopy); 
+    Bytes.blit !buffer 0 s 0 toCopy; (* blit the head across *) 
+    buffer := Bytes.sub !buffer toCopy (buffer_length - toCopy); 
       (* cut it out of the buffer *)
     toCopy 
 ;;
@@ -177,8 +177,6 @@ let parseShellListFromChannel chan =
   Lex.runParser
     Parse.parseShellActionList
     (Lexing.from_function (std_lexer_func (input_channel_line chan)))
-
-
 
 (*** shell actions and loading *) 
 
@@ -206,9 +204,6 @@ let rec process_action action =
       | "cd" -> chdir s
       | "open" -> load s
       | "quit" -> printf "\b~~~\n"; exit 0
-      (*> CPC *)
-      | "status" -> show_status ()
-      (*< CPC *)
       | str1 -> basicError (str1^" is an unknown directive") 
 
 and load name =

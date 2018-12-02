@@ -8,7 +8,7 @@
 
 open List
 open Format
-open Datum 
+open Datum
 open P_data
 open Environments
 open Infer
@@ -127,7 +127,7 @@ let declare is_attribute identifier source =
 	      (t1,funty pty sty,sub1) 
 	  | _ -> typeError [ty1] "is not a method type" 
 	end
-    | Simple |Recursive | Extensible | Discontinuous -> infer source expectedTy 
+    | Simple | Recursive | Extensible | Discontinuous -> infer source expectedTy 
   in 
   globalRefVarSub := 
     TyMap.fold 
@@ -135,7 +135,7 @@ let declare is_attribute identifier source =
       !globalRefVarSub 
       TyMap.empty ;
   if get_mode "infer" = Show_on
-  then peek inferredTerm "the inferred term"; 
+  then Environments._peek inferredTerm "the inferred term"; 
   if (get_mode "declaration" = Show_on)
   then format_declaration theString inferredType; 
 

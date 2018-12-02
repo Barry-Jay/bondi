@@ -79,17 +79,7 @@ type i_term =
   | Tletext of term_variable * i_term * i_term 
   | Tletdiscontinuous of term_variable * i_term * i_term 
 *)
-  | TnewArr of i_term * i_term             
-(*> CPC *)
-  | Tdname of P_data.name_form * i_term * i_type
-  | Tcname of P_data.name_form * term_variable * int * i_type
-  | Tname of P_data.name_form * term_variable * int * i_type
-  | Tpapp of i_term * i_term * i_type
-  | Prll of i_term * i_term
-  | Rest of term_variable * i_term
-  | Repl of i_term
-  | Pcase of i_term * i_term
-(*< CPC *)
+  | TnewArr of i_term * i_term
 
 type sub = i_type TyMap.t
 
@@ -110,9 +100,6 @@ type value =
   | Vext of value ref 
   | Vref of value ref
   | Varray of value array
-(*> CPC *)
-  | VtySub of sub
-(*< CPC *)
 and value_env = value TMap.t
 
 
@@ -157,7 +144,7 @@ val termError : i_term list -> string -> 'a
  * Note: I don't know why this was shared, seems like a bad idea.
  * Also it is no longer used anywhere.
 val fvc : int ref *)
-val nextvar : unit -> term_variable
+ val nextvar : unit -> term_variable
 
 val tvar : P_data.identifier -> i_term
 val t_un : i_term 
@@ -228,18 +215,8 @@ val formatTypeError :
     i_type TyMap.t -> i_type list * string -> unit
 val formatTermError :  i_term list * string -> unit
 
-val peek_type : i_type -> string -> unit 
-val peek_tyvs : P_data.tyVar list  -> string -> unit 
-val peek : i_term -> string -> unit
-val peeks : i_term list -> string -> unit
-val peek_value : value -> string -> unit
-
-(*> CPC *)
-val new_lock : unit -> (unit -> unit) * (unit -> unit)
-val optlock : unit -> (unit -> bool) * (unit -> unit)
-val new_generator : (int -> 'a) -> unit -> 'a
-val procEnv : (int , ((unit -> bool) * (unit -> unit) * value_env * i_term)) Hashtbl.t
-val show_status : unit -> unit
-val procGen : unit -> int
-(*< CPC *)
-
+val _peek_type : i_type -> string -> unit 
+(* val _peek_tyvs : P_data.tyVar list  -> string -> unit  *)
+val _peek : i_term -> string -> unit
+val _peeks : i_term list -> string -> unit
+val _peek_value : value -> string -> unit

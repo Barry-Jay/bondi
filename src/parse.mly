@@ -384,9 +384,6 @@ pTerm:
   | pTerm WHERE pTerm { Poper("where",[$1;$3])}
   | ISREF pTerm { Poper("isRef",[$2])}
   | ISARRAY pTerm {Poper("isArray",[$2])}
-  /*> CPC */
-  | process                         { $1 }
-  /*< CPC */
 ;
 
 
@@ -426,61 +423,6 @@ simpleBondiTerm:
   | simpleBondiTerm COLON pType         { Ptyped($1,$3) } 
   | simpleBondiTerm  DOT L_IDENT  { Pinvoke($1,$3,false)} 
 ;
-
-/*> CPC */
-
-/* Process forms: bracketed processes, parallel composition, replication,
- * restriction and CPC case. */
-process:
-  | LPAREN process RPAREN               { $2 }
-  | process BAR process                 { Pparr($1,$3) }
-  | BANG process                        { Prepl $2 }
-  | REST nameList IN process            { multirest $2 $4 }
-  | CPC compoundPattern RARROW pTerm    { Ppcase ($2,$4) }
-
-/* Datum as they can appear in CPC patterns, a subset of all
- * datum forms and not treated as general terms. */
-datumPattern:
-  | LPAREN RPAREN       { Pconstructor "Un" }
-  | INTEGER             { p_datum (Int $1) }
-  | FLOAT               { p_datum (Float $1) }
-  | CHARACTER           { p_datum (Char $1) }
-  | STRING              { p_datum (String $1) }
-  | TRUE                { p_datum (Bool true) }
-  | FALSE               { p_datum (Bool false)}
-  | UN                  { Pconstructor "Un" }
-
-/*  Name patterns are CPC patterns that are atomic, i.e. not
- * build from compounds. This includes names (variable,
- * protected and binding), and also constructors (variable
- * or protected) and datum (variable or protected). */
-namePattern:
-  | LPAREN namePattern RPAREN { $2 }
-  | L_IDENT         { Pname (Variable, $1) }
-  | CPCPRO  L_IDENT { Pname (Protected,$2) }
-  | CPCBIND L_IDENT { Pname (Binding,  $2) }
-  | U_IDENT         { Pcname (Variable,$1)}
-  | CPCPRO U_IDENT  { Pcname (Protected,$2) }
-  | datumPattern    { Pdname (Variable,$1) }
-  | CPCPRO datumPattern { Pdname (Protected,$2) }
-
-/* Compound CPC patterns are built with applications, this approach ensures they are
- * left associative for consistent interplay with pattern calculus. */
-compoundPattern:
-  | namePattern                                         { $1 }
-  | LPAREN compoundPattern RPAREN                       { $2 }
-  | compoundPattern LPAREN compoundPattern RPAREN       { Papply ($1,$3) }
-  | compoundPattern namePattern                         { Papply ($1,$2) }
-  | compoundPattern COMMA LPAREN compoundPattern RPAREN { Papply (Papply (Pcname(Variable,"Pair"),$1),$4) }
-  | compoundPattern COMMA namePattern                   { Papply (Papply (Pcname(Variable,"Pair"),$1),$3) }
-
-/* Name list, used for restrictions. */
-nameList:
-  | L_IDENT                   { [$1] }
-  | L_IDENT nameList          { $1::$2 }
-
-/*< CPC */
-
 
 patternMatchList:
     patternMatch  { [$1] }

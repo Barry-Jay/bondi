@@ -33,8 +33,3 @@ val infer_add_case :
            Environments.sub ->
            Environments.i_type -> Environments.sub * Environments.i_term
 
-(*> CPC *)
-val unify_for_cpc : Environments.sub ->Environments.sub ->
-                        Environments.i_type -> Environments.i_type -> Environments.sub
-(*< CPC *)
-

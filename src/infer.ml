@@ -161,16 +161,6 @@ let unify fixed sub ty0 ty1 = unify_p false fixed Exact sub ty0 ty1
  
 let subunify fixed sub ty0 ty1 = unify_p false fixed LessThan sub ty0 ty1 
 
-(*> CPC *)
-
-let unify_for_cpc bSub cSub bTy cTy =
-  unify_p true [] LessThan
-          (composeSubs bSub cSub)
-          (inst_tyscheme (applySub cSub cTy))
-          (inst_tyscheme (applySub bSub bTy))
-;;
-
-(*< CPC *)
 
       (* tymatch is a one-sided form of unification,
          like unification except that 
@@ -701,15 +691,6 @@ function
   | Pnew (tyv,tys) -> infer_new tyv tys
   | PnewArr (t1,t2) -> infer_new_array t1 t2 
   | Pinvoke (t,x,super) -> infer_invoke t x super
-(*> CPC *)
-  | Pparr (p1,p2) -> infer_parallel_composition p1 p2
-  | Prepl (p) -> infer_replication p
-  | Prest (n,p) -> infer_restriction n p
-  | Ppcase (p,s) -> infer_cpc_case p s
-  | Pname _
-  | Pdname _
-  | Pcname _ -> (fun _ _ _ _ -> typeError [] "Unexpected CPC name/constructor, aborting.")
-(*< CPC *)
 
 and infer_var x sEnv fixed sub0 expectedTy = 
   let (sch,symbol) = 
@@ -1600,139 +1581,6 @@ and infer_field sEnv fixed (sub,u) expectedTy =
 
   | _ -> pTermError [u] "is not a field"
 *)
-
-(*> CPC *)
-(* Infer each process seperately. *)
-and infer_parallel_composition procA procB sEnv fixed sub0 expectedTy =
-  let uty = cvar "Unit" in
-  let (sub1,procA1) = inf procA sEnv fixed sub0 uty in
-  let (sub2,procB2) = inf procB sEnv fixed sub1 uty in
-  let sub3 = unify fixed sub2 uty expectedTy in
-  (sub3,Prll(procA1,procB2))
-
-(* Infer the replicating process and maintain the replication. *)
-and infer_replication proc sEnv fixed sub0 expectedTy =
-  let uty = cvar "Unit" in
-  let (sub1,proc1) = inf proc sEnv fixed sub0 uty in
-  let sub2 = unify fixed sub1 uty expectedTy in
-  (sub2,Repl(proc1))
-
-(* Bind the restricted name to a new variable and infer the process under
- * the restriction. *)
-and infer_restriction name proc sEnv fixed sub0 expectedTy =
-  let uty = cvar "Unit" in
-  let newty = (TyV(nextTypeVar(),0),Linear) in
-  let sEnv1 = TMap.add (Var name) newty sEnv in
-  let (sub2,proc2) = inf proc sEnv1 fixed sub0 uty in
-  let sub3 = unify fixed sub2 uty expectedTy in
-  (sub3,Rest(Var name,proc2))
-
-
-(* Type inference for CPC cases, somewhat complex.
- * Communicable patterns must be typable as a whole,
- * as they may be bound and then evaluated entirely.
- * Non-communicable patterns need only be able to type
- * the components, as the whole cannot evaluate.
- * Type information must be added to patterns so that
- * pattern unification can be type safe (later). *)
-and infer_cpc_case patt body sEnv0 fixed sub0 expectedTy =
-  (* Determine if a pattern is communicable, note that
-   * communicable patterns need stricter type checking. *)
-  let rec communicable = function
-    | Pname(Variable,_)
-    | Pcname(Variable,_)
-    | Pdname(Variable,_) -> true
-    | Papply(p,q) -> communicable p && communicable q
-    | _ -> false
-  in
-  (* Determine the index and type of variables. *)
-  let getVarInfo x =
-    try let (ty,_) = TMap.find x sEnv0 in (0,ty)
-    with Not_found ->
-        try match envFind 0 x globalVEnv with
-            | (n,(_,(_,ty,hasRefVar))) -> 
-		if hasRefVar
-		then (n,applySub !globalRefVarSub ty)
-		else (n,ty)
-        with Not_found -> termError [Tvar (x,0)] "is not recognised in CPC pattern"
-  in
-  (* Helper function to infer a CPC pattern, returns:
-   * - environment of binding names and their types
-   * - updated type substitution
-   * - inferred pattern *)
-  let rec infer_cpc_pattern env sub pTy = function
-  | Pname(Binding,x) ->
-        if TMap.mem (Var x) env
-        then termError [Tvar(Var x,0)] "is a duplicate binding symbol"
-        else (TMap.add (Var x) (pTy,Simple) env,sub,Tname(Binding,Var x,0,pTy))
-  | Pname(form,x) ->
-        let (n,ty) = getVarInfo (Var x) in
-        let sub1 = unify fixed sub pTy ty in
-        (env,sub1,Tname(form,Var x,n,pTy))
-  | Pcname(form,c) ->
-        let (sub1,c1) = infer_constructor c env fixed sub pTy in
-        begin
-          match c1 with
-          | Tconstructor(Var c2,n) -> (env,sub1,Tcname(form,Var c2,n,pTy))
-          | _ -> termError [c1] "when expecting constructor"
-        end
-  | Pdname(form,Pdatum(d)) ->
-        let (sub1,d1) = infer_datum d env fixed sub pTy in
-        (env,sub1,Tdname(form,d1,pTy))
-  (* Communicable compound patterns must have types that support
-   * evaluation. *)
-  | Papply(p,q) as patt when communicable patt ->
-        let funTy = TyV(nextTypeVar(),0) in
-        let argTy = TyV(nextTypeVar(),0) in
-        let (env1,sub1,p1) = infer_cpc_pattern env  sub  funTy p in
-        let (env2,sub2,q2) = infer_cpc_pattern env1 sub1 argTy q in
-        begin
-          match inst_tyscheme (applySub sub2 funTy) with
-          | Funty(aTy,rTy) ->
-              let sub3 = subunify fixed sub2 aTy argTy in
-              let sub4 = subunify fixed sub3 rTy pTy in
-              (env2,sub4,Tpapp(p1,q2,pTy))
-          | fTy ->
-              let sub3 = subunify fixed sub2 fTy (funty argTy pTy) in
-              (env2,sub3,Tpapp(p1,q2,pTy))
-        end
-  (* Pattern is not communicable, the type of the "function" and
-   * "argument" components do not relate to each other. *)
-  | Papply(p,q) ->
-        let pTy0 = TyV(nextTypeVar(),0) in
-        let (env1,sub1,p1) = infer_cpc_pattern env sub pTy0 p in
-        let qTy1 = TyV(nextTypeVar(),0) in
-        let (env2,sub2,q2) = infer_cpc_pattern env1 sub1 qTy1 q in
-        (env2,sub2,Tpapp(p1,q2,pTy))
-  | _ -> termError [] "malformed CPC pattern"
-  in
-  (* Apply the type substitution so the types can be easily
-   * unified when trying to unify patterns. *)
-  let rec pushSub sub = function
-  | Tname(f,x,n,t) -> Tname(f,x,n,applySub sub t)
-  | Tcname(f,c,n,t) -> Tcname(f,c,n,applySub sub t)
-  | Tdname(f,d,t) -> Tdname(f,d,applySub sub t)
-  | Tpapp(p,q,t) -> Tpapp(pushSub sub p,pushSub sub q,applySub sub t)
-  | z -> termError [z] "when expecting CPC pattern"
-  in
-  (* The inference goes as follows
-   * - create a fresh type for the pattern
-   * - infer the pattern with the fresh type and empty binding environment
-   * - use binding environment to update substitution environment
-   * - infer the body with updated environment and sub
-   * - subunify to final sub
-   * - use sub to update type annotations in the pattern (removing dependence on sub)
-   * - return sub and inferred CPC case *)
-  let pTy = TyV(nextTypeVar(),0) in
-  let (sEnv1,sub1,patt1) = infer_cpc_pattern TMap.empty sub0 pTy patt in
-  let sEnv2 = TMap.fold TMap.add sEnv1 sEnv0 in
-  let (sub2,body2) = inf body sEnv2 fixed sub1 (cvar "Unit") in
-  let sub3 = subunify fixed sub2 (cvar "Unit") expectedTy in
-  let patt2 = pushSub sub3 patt1 in
-  (sub3,Pcase(patt2,body2))
-(*< CPC *)
-;;
-
 
 
 let infer source ty = 

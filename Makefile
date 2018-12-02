@@ -3,14 +3,14 @@ d := ~/.bondi
 
 # Default rule
 default:
-	jbuilder build @install
+	dune build @install
 	test -d $d || mkdir -p $d && cp -r prelude $d
 
 install:
-	jbuilder install $(INSTALL_ARGS)
+	dune install $(INSTALL_ARGS)
 
 uninstall:
-	jbuilder uninstall $(INSTALL_ARGS)
+	dune uninstall $(INSTALL_ARGS)
 
 reinstall: uninstall reinstall
 

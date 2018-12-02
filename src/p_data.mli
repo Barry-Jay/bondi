@@ -32,16 +32,6 @@ type p_term =
   | Pnew of string * p_type list 
   | PnewArr of p_term * p_term
   | Pinvoke of p_term * identifier * bool (* a super ? *) 
-(*> CPC *)
-  | Pname of name_form * identifier
-  | Pcname of name_form * identifier
-  | Pdname of name_form * p_term
-  | Pparr of p_term * p_term
-  | Prest of identifier * p_term
-  | Prepl of p_term
-  | Ppcase of p_term * p_term
-and name_form = Variable | Protected | Binding
-(*< CPC *)
 and let_status = Simple | Recursive | Extensible | Linear | Method | Discontinuous
 and p_case = identifier list option * p_term * p_type option * p_term 
 type add_case = identifier * p_case
@@ -78,13 +68,6 @@ val ap : p_term -> p_term -> p_term
 val ap2 : p_term -> p_term -> p_term -> p_term
 val lam : p_term -> p_term -> p_term
 val multilam :  p_term list -> p_term -> p_term
-(*> CPC *)
-val multirest : identifier list -> p_term -> p_term
-(*< CPC *)
-(*
-val lin : p_term -> p_term -> p_term
-val multilin :  p_term list -> p_term -> p_term
-*)
 
 val modes : (string * show_mode) list ref
 val set_mode : string -> show_mode -> unit

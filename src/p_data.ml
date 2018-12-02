@@ -42,16 +42,6 @@ type p_term =
   | Pnew of string * p_type list 
   | PnewArr of p_term * p_term
   | Pinvoke of p_term * identifier * bool (* a super ? *)
-(*> CPC  *)
-  | Pname of name_form * identifier
-  | Pcname of name_form * identifier
-  | Pdname of name_form * p_term
-  | Pparr of p_term * p_term
-  | Prest of identifier * p_term
-  | Prepl of p_term
-  | Ppcase of p_term * p_term
-and name_form = Variable | Protected | Binding
-(*< CPC *)
 and let_status = Simple | Recursive | Extensible | Linear | Method | Discontinuous
 and p_case = identifier list option * p_term * p_type option * p_term 
 type add_case = identifier * p_case
@@ -101,13 +91,6 @@ let ap f x = Papply(f,x)
 let ap2 f x y = ap (ap f x) y
 let lam p t = Plam(p,t) ;;
 let multilam = List.fold_right lam ;;
-(*> CPC *)
-let multirest = List.fold_right (fun n p -> Prest(n,p));;
-(*< CPC *)
-(*
-let lin p t = Pli(p,t) ;;
-let multilin = List.fold_right lin ;;
-*)
 
 let version_number =  System.version;;
 
@@ -246,18 +229,18 @@ let rpn() = ps ")" ;;
 
 (* tidying - general, but first used with functors *)
 
-let incrStringCounter ctr minc maxc = (* for incrementing term and type variables *)
+(* let incrStringCounter ctr minc maxc = (* for incrementing term and type variables *)
   let ndx = ref (String.length ctr - 1)
   and flag = ref false
   and newCtr = String.copy ctr
   in 
-  while (!ndx >= 0 && !flag = false) do (* CHANGED & to && !!!! *)
+  while (!ndx >= 0 && !flag = false) do
     flag := true;
     let c = Char.chr ((Char.code newCtr.[!ndx]) + 1)
     in
     if c <= maxc
     then 
-      newCtr.[!ndx] <- c
+     String.set newCtr !ndx c
     else (* carry *) 
       (flag := false;
        newCtr.[!ndx] <- minc;
@@ -268,6 +251,21 @@ let incrStringCounter ctr minc maxc = (* for incrementing term and type variable
     (String.make 1 minc) ^ newCtr
   else
     newCtr
+;; *)
+
+let incrStringCounter: string -> char -> char -> string =
+fun counter minc maxc ->
+  let explode s = List.init (String.length s) (String.get s) in
+  let rec (stringCounter: char list -> char -> char -> bool -> char list) =
+  fun ctr minc maxc carry ->
+    let nextChar c = Char.chr ((Char.code c) + 1) in
+    match (ctr, carry) with
+          | ([], false) -> []
+          | ([], true) -> [ minc ]
+          | (x :: xs, _) when x = maxc -> minc :: stringCounter xs minc maxc true
+          | (x :: xs, false) -> nextChar x :: xs
+          | (x :: xs, true) -> nextChar x :: stringCounter xs minc maxc false in
+Base.String.of_char_list (List.rev (stringCounter (List.rev (explode counter)) minc maxc false))
 ;;
 
 (*
@@ -439,27 +437,6 @@ let rec format_p_term = function
        format_p_term t;
        ps " ";
        format_p_term n
-
-(*> CPC *)
-  | Pdname (ty,d) -> (if ty = Protected then ps"~" else ());format_p_term d
-  | Pcname (ty,id)
-  | Pname (ty,id) ->
-      let formd =
-        match ty with
-        | Variable -> id
-        | Protected -> "~" ^ id
-        | Binding -> "\\" ^ id
-      in
-      ps formd
-
-  | Pparr(p1,p2) -> lpn();format_p_term p1;ps ") | (";format_p_term p2;rpn()
-
-  | Prest (id,p) -> ps ("(v " ^ id ^ ")"); format_p_term p
-
-  | Prepl (p) -> ps "!(";format_p_term p;ps ")"
-
-  | Ppcase (p,s) -> (lpn();format_p_term p; ps " -> "; format_p_term s;rpn())
-(*< CPC *)
 
 and p_peek t str = 
   format_p_term t ; 

@@ -66,17 +66,7 @@ type i_term =
   | Tletext of term_variable * i_term * i_term (* extensible let-terms *) 
   | Tletdiscontinuous of term_variable * i_term * i_term (* discontinuous let-terms *) 
 *)
-  | TnewArr of i_term * i_term                 (* new arrays *) 
-(*> CPC *)
-  | Tdname of P_data.name_form * i_term * i_type          (* Datum values in patterns *)
-  | Tcname of P_data.name_form * term_variable * int * i_type   (* Constructors for CPC patterns: form, constructor, index *)
-  | Tname of P_data.name_form * term_variable * int * i_type (* Names for CPC patterns: name form, variable, index *)
-  | Tpapp of i_term * i_term * i_type             (* Compound patterns *)
-  | Prll of i_term * i_term                       (* Paralell composition of two processes *)
-  | Rest of term_variable * i_term                (* Restriction of a term_variable over a process *)
-  | Repl of i_term                                (* Replicating process *)
-  | Pcase of i_term * i_term                       (* Process-case, pattern and body *)
-(*< CPC *)
+  | TnewArr of i_term * i_term                 (* new arrays *)
 
 type sub = i_type TyMap.t
 
@@ -97,9 +87,6 @@ type value =
   | Vext of value ref (* for extensible functions and methods *) 
   | Vref of value ref
   | Varray of value array
-(*> CPC *)
-  | VtySub of sub
-(*< CPC *)
 and value_env = value TMap.t
 
 (* type sub = i_type TyMap.t *)
@@ -279,7 +266,7 @@ let rec remove_duplicates = function
     [] -> [] 
   | x :: xs -> x :: (list_remove x (remove_duplicates xs))
 
-let string_of_tyvar = 
+let _string_of_tyvar = 
   function 
     TyVar s -> s 
   | MTypeVar n -> "ty_"^(string_of_int n)
@@ -322,7 +309,7 @@ let covTyVars sub =
 ;;
 
 let freeTyVarsInSEnv sub sEnv =
-  let doEntry x (sch,_) tyVars =
+  let doEntry (* x *) _ (sch,_) tyVars =
     append (freeTyVars sub sch) tyVars
     in
     remove_duplicates (TMap.fold doEntry sEnv [])
@@ -330,7 +317,7 @@ let freeTyVarsInSEnv sub sEnv =
 
 
 let avoid x sub = 
-  let aux y ty b = b &&  not (mem x (freeTyVars idSub ty)) 
+  let aux (* y *) _ ty b = b &&  not (mem x (freeTyVars idSub ty)) 
   in 
   TyMap.fold aux sub true
 ;;
@@ -403,27 +390,29 @@ let fIndent = 2;;
 
 (* precedences *)
 
-let prec_fun =    1
-let prec_let =  2
+(*
+let prec_fun = 1
+let prec_let = 2
 let prec_selector = 2
 let prec_seq = 3
 let prec_assign = 4
 let prec_equal = 5
+*)
 
-let prec_app =    10
-let prec_bang = 11
-let prec_pattern = 20
+let prec_app = 10
+(* let prec_bang = 11
+let prec_pattern = 20 *)
 
-let prec_special = 0 ;;
+(* let prec_special = 0 ;; *)
 let prec_wedge = 1;;
 let prec_forall = 1;;
 let prec_funty = 2;; 
-let prec_mu = 3
-let prec_tuple = 4
-let prec_sum = 5
+(* let prec_mu = 3 *)
+(* let prec_tuple = 4 *)
+(* let prec_sum = 5 *)
 let prec_product = 6
-let prec_compose = 7
-let prec_par = 3
+(* let prec_compose = 7 *)
+(* let prec_par = 3 *)
 
 
 let string_of_tyvar = 
@@ -473,16 +462,16 @@ let rec split_apF args = function
   | ty -> (ty,args) 
 ;;
 
-let rec list_equal = function
+(* let rec list_equal = function
     [],[] -> true 
   | x::xs,y::ys -> x ==y && list_equal (xs,ys)
-  | _ -> false 
+  | _ -> false  *)
 
 let rec class_path (tyv,n) zs = function
     (ApplyF(ty,rest)) as ty0 -> 
       begin 
 	match split_apF [] ty with 
-	  (TyC (TyVar str1,n1),zs1) -> 
+	  (TyC (TyVar str1,n1),(* zs1 *) _) -> 
 	    if  true (* list_equal (zs,zs1) !!! *) &&
 	      String.length str1 > 4 &&  
 	      String.sub str1 (String.length str1 -4) 4 = 
@@ -539,7 +528,7 @@ let rec ftype do_ty left_prec right_prec =
 *) 
    | TyV (x,_) -> 
        format_tyvar tidy x f_string_tbl next_f_string (* ; ps "_v" *) 
-   | TyC (x,n) -> ps (string_of_tyvar x)
+   | TyC (x,(* n *) _) -> ps (string_of_tyvar x)
    | Funty (ty1,ty2) -> 
        let needsParens = 
 	 prec_funty < left_prec 
@@ -670,7 +659,7 @@ let rec ftype do_ty left_prec right_prec =
 	      ) ;
 	     close_box()
 
-	 | Some (tyv0,n0,zs,ty1) -> 
+	 | Some (tyv0, (* n0 *) _,zs,ty1) -> 
 	     ps (string_of_tyvar tyv0) ;
 	     begin
 	       match zs with 
@@ -787,7 +776,7 @@ pf" the sub is:\n";
   TyMap.iter f sub
 ;;
 
-let format_datum d = ps (string_of_datum_value d)
+let _format_datum d = ps (string_of_datum_value d)
 
 let format_term_variable = function
   | Var y -> ps y
@@ -839,9 +828,6 @@ let rec do_format t' left_prec right_prec =
 	
   | Oper(str,args) -> ps (str^"("); format_arg_list  args; ps ")" 
 
-(*> CPC *)
-  | Tpapp(t1,t2,_)
-(*< CPC *)
   | Apply(t1,t2) ->
       begin
         let needParens = prec_app <= left_prec || prec_app < right_prec in
@@ -863,27 +849,8 @@ let rec do_format t' left_prec right_prec =
       format_term_variable x ;
       ps " -> " ;
       do_format s 0 0;
-     rpn()	
-(*> CPC *)
-  | Tdname (ty,d,_) -> (if ty = P_data.Protected then ps "~" else ());do_format d 0 0
-  | Tcname (nt,id,_,_)
-  | Tname(nt,id,_,_) ->
-        (match nt with
-        | Variable -> ()
-        | Protected -> ps "~"
-        | Binding -> ps "\\");
-        format_term_variable id
-  
-  | Prll(p1,p2) -> ps "(";do_format p1 0 0;ps ") | (";do_format p2 0 0;ps ")"
-  
-  | Rest(x,p) -> ps "(v "; format_term_variable x; ps ")"; do_format p 0 0
-  
-  | Repl (p) -> ps "!";do_format p 0 0
-  
-  | Pcase (p,s) -> do_format (Case(None,p,s)) 0 0
-(*< CPC *)
- 
- | Case (None,p,s) -> 
+     rpn()
+  | Case (None,p,s) -> 
       lpn();
       do_format p 0 0 ;
       ps " -> ";                 
@@ -941,7 +908,7 @@ and format_arg_list = function
   | t::ts -> do_format t 0 0 ; ps ","; format_arg_list ts 
   | [] -> ()
 	
-and format_closure clos str = 
+(* and format_closure clos str = 
   let f x y = 
     format_term_variable x;
     ps " |-> ";
@@ -950,7 +917,7 @@ and format_closure clos str =
     flush stdout;
   in 
   TMap.iter f clos;
-  pf (" is "^str)
+  pf (" is "^str) *)
     
 let format_term t = 
   open_box 0;
@@ -966,7 +933,7 @@ let rec format_value = function
   | Vsuper x -> format_value x; ps ".super"
   | Vwildcard str -> ps ("_"^str)
   | Vwildstring -> ps "wildstring"
-  | Vconstructor (x,n) -> format_term_variable x
+  | Vconstructor (x, (* n *) _) -> format_term_variable x
   | Vdatum d -> ps (string_of_datum_value d)
   | Vapply(x1,x2) ->
       format_value x1;
@@ -981,32 +948,29 @@ let rec format_value = function
 
 (* peeking *)
 
-let peek_type ty msg = 
+let _peek_type ty msg = 
   format_type false ty; 
   print_flush(); 
   pf (" is " ^msg) ; 
   print_flush()
 ;;
 
-let peek_tyvs delta msg = 
+(* let peek_tyvs delta msg = 
 pf "[";
 iter (fun x ->   format_type false (TyV(x,0)); pf ","; print_flush() ) delta;
 pf ("] is "^msg);
   print_flush()
-;;
+;; *)
 
 
-let peek t str = format_term t; print_flush(); pf (" is " ^ str)
+let _peek t str = format_term t; print_flush(); pf (" is " ^ str)
 
-let peeks ts str = List.iter (fun x -> peek x str) ts 
+let _peeks ts str = List.iter (fun x -> _peek x str) ts 
 
-let peek_value v str = format_value v; print_flush(); pf (" is " ^ str)
+let _peek_value v str = format_value v; print_flush(); pf (" is " ^ str)
 
-let peek_value v str = format_value v; print_flush (); pf (" is " ^ str)
+let _peek_value v str = format_value v; print_flush (); pf (" is " ^ str)
 
-
-
-
 (*** Errors *)
 
 let formatTypeError sub (tys,s) = 
@@ -1096,7 +1060,6 @@ with _ -> pf "cannot format term error"
 ;;
 
 
-(*> CPC *)
 (* Create a lock/unlock pair to allow resource locking. *)
 let new_lock () =
   let mutex = Mutex.create () in
@@ -1104,9 +1067,11 @@ let new_lock () =
 
 (* A lock that may or may not be lockable. Returns true if the
  * lock is obtained, false otherwise. *)
+(*
 let optlock () =
   let mutex = Mutex.create () in
   (fun () -> Mutex.try_lock mutex),(fun () -> Mutex.unlock mutex)
+  *)
 
 (* Code to uniquely generate numbers (thread safe). *)
 let new_generator gen =
@@ -1116,27 +1081,8 @@ let new_generator gen =
   next
 ;;
 
-(* Create process environment. *)
-let procEnv = Hashtbl.create 100;;
-
-(* Shows the processes currently in the process environment. *)
-let show_status () =
-  let show_proc ppid (_,_,_,p) =
-    let pidstr = string_of_int ppid in
-    ps ("Process with ID " ^ pidstr ^ ":");
-    format_term p;
-    print_newline()
-  in
-  Hashtbl.iter show_proc procEnv
-;;
-
 (* A generator for unique machine variables. *)
 let nextvar = new_generator (fun x -> Mvar x);;
-
-(* A local generator for process ID's. *)
-let procGen = new_generator (fun x -> x);;
-(*< CPC *)
-
 
 
 let rec freeRefTyVars   ty = 
@@ -1166,7 +1112,6 @@ match restore_class ty with
     | Array ty -> freeTyVars idSub ty 
     | Quant(x,ty) -> list_remove x (freeRefTyVars ty)
 
-(* ??? is this ok? *)
 and handle_args rvs = function
   | (argtys,k) -> 
       if k<=0 
@@ -1174,7 +1119,7 @@ and handle_args rvs = function
       else 
 	match argtys with 
 	| [] -> rvs 
-	| f :: argtys1 -> handle_args (append (freeTyVars idSub f) rvs) (argtys,k-1)
+	| f :: (* argtys1 *) _ -> handle_args (append (freeTyVars idSub f) rvs) (argtys,k-1)
 
 and handle_args_simple rvs ty = append (freeRefTyVars ty) rvs
 ;; 
