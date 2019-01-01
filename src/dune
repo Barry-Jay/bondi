@@ -5,4 +5,5 @@
  (name bondi)
  (public_name bondi)
  (libraries unix threads base)
+ (ocamlopt_flags (-O3 -inlining-report))
 )

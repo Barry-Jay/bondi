@@ -40,17 +40,12 @@ let add_constructors (name,sch) =
 
 let initial_term_environment() = 
 List.iter add_constructors constructors
-
-
-
-
 
 (*** Filesystem *)
 
 let chdir dir =
   Sys.chdir dir; (* raises [Sys_error message] if it fails *)
   print_endline ("New directory: " ^ Sys.getcwd ())
-
 
 let file_exists = Sys.file_exists
 let basic_paths = "." :: (try [System.standard_library] with Not_found -> [])
@@ -119,22 +114,6 @@ let set_stdin_echo_mode (value:bool) =
 
 let set_stdin_number_mode (value:bool) = 
   number_switch := value;;
-
-
-(* let readline_lexer_func (s:string) (maxfill:int) =
-  begin (* prime the buffer *)
-    if !buffer = "" then
-      buffer := Config.readline (get_prompt()); 
-  end;
-
-  let buffer_length = String.length !buffer in
-  let toCopy = min maxfill buffer_length in
-    String.blit !buffer 0 s 0 toCopy; (* blit the head across *) 
-    buffer := String.sub !buffer toCopy (buffer_length - toCopy); 
-      (* cut it out of the buffer *)
-    toCopy
-;;
-*)
 
 let std_lexer_func get_line (s:bytes) (maxfill:int)  =
   begin (* prime the buffer *)
@@ -229,15 +208,11 @@ and load name =
   end;
   Printf.printf "(* Finished %s \"%s\" *)\n" action_text source;
   flush stdout;
+  set_mode "echo" Show_on;
+  set_mode "prompt" Show_on;
   ()
 
-
-
-
-
-
 (*** Top level loop *)
-
 
 
 let error_stop_mode = ref false
@@ -329,7 +304,7 @@ let theShell () =
   in
   let interactive = command_line.cl_files = [] && isatty () in
   error_stop_mode := command_line.cl_errorstopmode;
-  let startUps = if command_line.cl_std then [] else [] in
+  let startUps = if command_line.cl_std then ["prelude/standard_prelude"] else [] in
   Sys.catch_break true;
   initial_type_environment();
   initial_term_environment();
