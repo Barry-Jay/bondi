@@ -208,6 +208,7 @@ and load name =
   end;
   Printf.printf "(* Finished %s \"%s\" *)\n" action_text source;
   flush stdout;
+  modes := save_modes;
   ()
 
 (*** Top level loop *)
