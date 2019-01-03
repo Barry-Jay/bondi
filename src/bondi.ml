@@ -208,8 +208,6 @@ and load name =
   end;
   Printf.printf "(* Finished %s \"%s\" *)\n" action_text source;
   flush stdout;
-  set_mode "echo" Show_on;
-  set_mode "prompt" Show_on;
   ()
 
 (*** Top level loop *)
@@ -322,7 +320,7 @@ let theShell () =
     pf ("Standard library: " ^ System.standard_library);
     pf "See README for details" ;
     pf "type `%quit;;' to exit" ;
-    set_mode "echo" Show_on;
+    set_mode "echo" Show_off;
     set_mode "prompt" Show_on;
   end;
   if command_line.cl_files = [] then readEvalPrint () 

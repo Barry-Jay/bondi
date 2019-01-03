@@ -260,8 +260,7 @@ fun counter minc maxc ->
   fun ctr minc maxc carry ->
     let nextChar c = Char.chr ((Char.code c) + 1) in
     match (ctr, carry) with
-          | ([], false) -> []
-          | ([], true) -> [ minc ]
+          | ([], _) -> [ minc ]
           | (x :: xs, _) when x = maxc -> minc :: stringCounter xs minc maxc true
           | (x :: xs, false) -> nextChar x :: xs
           | (x :: xs, true) -> nextChar x :: stringCounter xs minc maxc false in
