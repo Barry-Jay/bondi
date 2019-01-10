@@ -6,9 +6,13 @@ homepage: "https://github.com/Barry-Jay/bondi"
 bug-reports: "https://github.com/Barry-Jay/bondi/issues"
 dev-repo: "https://github.com/Barry-Jay/bondi.git"
 license: "Apache-2.0"
+
 build: [
- ["make"]
+  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
 ]
 depends: [
-  "jbuilder"                {build & >= "1.0+beta12"}
+  "dune"                {build & >= "1.5"}
+  "base"                {>= "v0.11.1"}
+  "unix"
 ]
