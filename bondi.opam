@@ -5,7 +5,7 @@ authors: ["Barry Jay" "Jose Vergara"]
 homepage: "https://github.com/Barry-Jay/bondi"
 bug-reports: "https://github.com/Barry-Jay/bondi/issues"
 dev-repo: "https://github.com/Barry-Jay/bondi.git"
-license: "Apache-2.0"
+license: "MIT"
 
 build: [
   ["dune" "subst"] {pinned}
@@ -14,5 +14,5 @@ build: [
 depends: [
   "dune"                {build & >= "1.5"}
   "base"                {>= "v0.11.1"}
-  "unix"
+  "base-unix"
 ]
