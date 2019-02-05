@@ -687,7 +687,7 @@ function
   | Paddcase (x,case) -> infer_add_case (Var x) case 
   | Psubcase x -> infer_sub_case (Var x)
   | Plet(status,param,u,t) -> infer_let status param u t 
-  | Ptyped (t1,ty) -> infer_typed t1 ty  
+  | Ptyped (t1,ty) -> infer_typed t1 ty 
   | Pnew (tyv,tys) -> infer_new tyv tys
   | PnewArr (t1,t2) -> infer_new_array t1 t2 
   | Pinvoke (t,x,super) -> infer_invoke t x super

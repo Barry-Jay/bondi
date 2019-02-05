@@ -176,9 +176,12 @@ let add_case_method m case sch =
 	(sch1,ChoiceF(sch1, default_sch))
     | _ -> (default_sch, default_sch) 
   in 
-  ps ( m ^ ": "); 
+if get_mode "declaration" == Show_on
+then begin
+ps ( m ^ ": "); 
   format_type true (inst_tyscheme case_sch);
-  pf "";
+pf ""
+					end;
   res_sch 
 ;;
 
@@ -307,7 +310,7 @@ let declare_function_type (tyv,ctr,decs) =
 
 
       let abs_ty=clos_ty idSub TMap.empty fty 
-(* miseese some vars 
+(* miseese sobome vars 
 fold_right (fun x ty -> Quant(x,ty)) paramvars fty
 *)
       in 
@@ -564,7 +567,8 @@ gTyEnvAdd (TyVar cl_tyv) ctr (Synonym(TyC (TyVar cl_tyv,ctr)));
   in 
   envAdd (Var constructorString) ctr (clos_ty idSub TMap.empty fty,Linear) globalCEnv;
 
-   pf ("class "^cl_str^" {") ; 
+if get_mode "declaration" == Show_on
+then   pf ("class "^cl_str^" {") ; 
 
 
 
@@ -592,7 +596,9 @@ gTyEnvAdd (TyVar cl_tyv) ctr (Synonym(TyC (TyVar cl_tyv,ctr)));
   List.iter 
    (f_counter := "";add_case_function (TVarSet.singleton (Var constructorString))) 
    add_cases;
-pf "}"
+
+   if get_mode "declaration" == Show_on
+   then pf "}"
 ;;
 
 

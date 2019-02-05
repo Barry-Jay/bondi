@@ -44,8 +44,9 @@ List.iter add_constructors constructors
 (*** Filesystem *)
 
 let chdir dir =
-  Sys.chdir dir; (* raises [Sys_error message] if it fails *)
-  print_endline ("New directory: " ^ Sys.getcwd ())
+Sys.chdir dir; (* raises [Sys_error message] if it fails *)
+if get_mode "comments" = Show_on
+then   print_endline ("New directory: " ^ Sys.getcwd ())
 
 let file_exists = Sys.file_exists
 let basic_paths = "." :: (try [System.standard_library] with Not_found -> [])
@@ -193,8 +194,9 @@ and load name =
   in 
   let save_modes = !modes in
   modes := ("prompt", Show_off) :: ("echo", Show_off) :: !modes;
-  let chan = open_in source in
-  Printf.printf "(* Begin %s \"%s\"... *)\n" action_text source;
+let chan = open_in source in
+   if get_mode "comments" = Show_on
+   then Printf.printf "(* Begin %s \"%s\"... *)\n" action_text source;
   flush stdout;
   begin
     try
@@ -206,7 +208,8 @@ and load name =
       close_in chan;
       raise e
   end;
-  Printf.printf "(* Finished %s \"%s\" *)\n" action_text source;
+   if get_mode "comments" = Show_on
+   then Printf.printf "(* Finished %s \"%s\" *)\n" action_text source;
   flush stdout;
   modes := save_modes;
   ()

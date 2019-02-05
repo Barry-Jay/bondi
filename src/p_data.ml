@@ -114,7 +114,8 @@ let modes = ref [               (* list of string/default pairs *)
   "types",      show_on;         (* use types *) 
   "nomatch",    show_off;        (* match failure as a bondi exception not an ocaml exception *) 
   "declaration_index", show_off; (* show the declaration index when formatting *) 
-  "value",      show_on          (* show the result of evaluation *)
+  "value",      show_on;          (* show the result of evaluation *)
+  "comments",   show_on          (* show comments, e.g. opening of files or changing directory  *)
 ] ;;
 
 
