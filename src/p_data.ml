@@ -113,7 +113,8 @@ let modes = ref [               (* list of string/default pairs *)
   "specialise", show_off;       (* hide specialisation details *) 
   "types",      show_on;         (* use types *) 
   "nomatch",    show_off;        (* match failure as a bondi exception not an ocaml exception *) 
-  "declaration_index", show_off (* show the declaration index when formatting *) 
+  "declaration_index", show_off; (* show the declaration index when formatting *) 
+  "value",      show_on          (* show the result of evaluation *)
 ] ;;
 
 

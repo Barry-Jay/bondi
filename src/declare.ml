@@ -153,8 +153,10 @@ let declare is_attribute identifier source =
       in
       envAdd (Var theString) ctr closed globalVEnv; 
       globalRefVarSub := 
-        fold_left (fun sub x -> TyMap.add x (TyV(x,0)) sub) !globalRefVarSub refVars; 
-      format_declared_value inferredType theString theValue;
+fold_left (fun sub x -> TyMap.add x (TyV(x,0)) sub) !globalRefVarSub refVars;
+   if get_mode "value" = Show_off
+   then ()
+   else format_declared_value inferredType theString theValue;
 
 ;;
 
