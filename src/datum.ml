@@ -54,19 +54,6 @@ let datum_type_string = function
   | Host       _ ->  "Host"
   | Un           ->  "Unit"         
 
-let string_of_datum_value = function 
-    Int n -> string_of_int n 
-  | Float f -> string_of_float f 
-  (* | Char c -> "'" ^ Char.escaped c ^ "'" *)
-  | Char c -> "'" ^ Char.escaped c ^ "'"
-  | String s -> "\"" ^ s ^ "\""
-  | Bool true  -> "True" 
-  | Bool false -> "False" 
-  | Socket (* (s, i, o, d) *) (_, _, _, d) -> "Socket:" ^ d
-  | Host (* c *) _ -> "Host"
-  | Un -> "Unit"
-;;
- 
 let int_ops_bss = [
   
   "plusint";

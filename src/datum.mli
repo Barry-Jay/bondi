@@ -36,7 +36,10 @@ val basicError : string -> 'a
 
 val datum_equal : datum_value * datum_value -> bool 
 val datum_type_string : datum_value -> string 
+(*
 val string_of_datum_value : datum_value -> string
+has been moved to p_data.ml to allow for modes to influence printing 
+*)
 val all_ops : (string list * string)  StringMap.t 
 val eval_datum : string -> datum_value list -> datum_value
 val prec_op : string -> int

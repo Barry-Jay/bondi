@@ -73,9 +73,13 @@ let format_declared_value ty x v =
   if doprint ty
   then 
     begin
+      if get_mode "comments" = Show_on
+      then 
+       begin 
       ps x; 
       ps " = ";
       print_flush();
+       end;
       print_value v;
       print_newline()
     end

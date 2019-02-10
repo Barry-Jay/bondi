@@ -6,6 +6,7 @@ open List
 open Format
 open Datum 
 
+
 type identifier = string
 type tyVar = 
     TyVar of string
@@ -335,7 +336,24 @@ let p_peek_type pty msg =
   print_flush()
 ;;
 
-(*** term formatting *) 
+(*** term formatting *)
+
+
+let string_of_datum_value = function 
+    Int n -> string_of_int n 
+  | Float f -> string_of_float f 
+  (* | Char c -> "'" ^ Char.escaped c ^ "'" *)
+  | Char c -> "'" ^ Char.escaped c ^ "'"
+  | String s -> if get_mode "comments" = Show_on
+                then "\"" ^ s ^ "\""
+                else s
+  | Bool true  -> "True" 
+  | Bool false -> "False" 
+  | Socket (* (s, i, o, d) *) (_, _, _, d) -> "Socket:" ^ d
+  | Host (* c *) _ -> "Host"
+  | Un -> "Unit"
+;;
+ 
 
 (*
 let rec format_identifiers = function 
@@ -349,7 +367,7 @@ let rec format_p_term = function
    | Ptvar x 
    | Pconstructor x -> ps x
    | Pwildcard str -> ps ("_"^str)
-   | Pdatum d -> ps (string_of_datum_value d)
+   | Pdatum d -> pf "Pdatum"; ps (string_of_datum_value d)
 
    | Poper(str,ts) -> 
        ps str;

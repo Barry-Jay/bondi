@@ -1,3 +1,5 @@
+val string_of_datum_value : Datum.datum_value -> string
+
 type identifier = string
 type tyVar = 
     TyVar of string   (* user-defined variables *)
