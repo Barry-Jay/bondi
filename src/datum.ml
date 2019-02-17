@@ -160,7 +160,7 @@ fold_right (binary "Int") int_ops_bss (
   StringMap.add "containsstring" (["Char";"String"],"Bool") (
   StringMap.add "copystring" (["String"],"String") (
   StringMap.add "escapedstring" (["String"],"String") (
-  StringMap.add "escapecomma" (["String"], "String") (
+  StringMap.add "escapecsv" (["String"], "String") (
   StringMap.add "lengthstring" (["String"],"Int") (
   StringMap.add "uppercasestring" (["String"],"String") (
   StringMap.add "substring" (["Int";"Int";"String"],"String") (
@@ -354,7 +354,7 @@ let eval_datum d = function
                                   let inc = Unix.in_channel_of_descr newSock and
                                       ouc = Unix.out_channel_of_descr newSock in
                                   Socket (newSock,inc,(ouc,true),s)
-    | "escapecomma" -> String (Str.global_replace (Str.regexp_string ",") "\\," s)                           
+    | "escapecsv" -> String (Str.global_replace (Str.regexp_string "\"") "\"\"" s)                           
 	  | _ -> basicError (d^" is not a unary string op")
 		)
 (* String operations *)
